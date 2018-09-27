@@ -1,0 +1,9 @@
+<h3>Login</h3>
+<form action="/login" method="post">
+<input type="text" name="email" id="email"><br>
+<input type="password" name="password" id="password">
+<input type="submit" value="Login">
+</form>
+{{ if .error }}
+<p>{{ .error }}</p>
+{{ end }}
