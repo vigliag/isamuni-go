@@ -37,21 +37,19 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 }
 
 func loginEmail(c echo.Context) error {
-	tplName := "loginPage.html"
+	tplName := "login.html"
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 
 	if email == "" || password == "" {
 		log.Println("Empty email or password")
-		c.Render(http.StatusBadRequest, tplName, H{"error": "Empty email or password"})
-		return nil
+		return c.Render(http.StatusBadRequest, tplName, H{"error": "Empty email or password"})
 	}
 
 	user := db.LoginEmail(email, password)
 	if user == nil {
 		log.Println("Invalid email or password")
-		c.Render(http.StatusNotFound, tplName, H{"error": "Invalid email or password"})
-		return nil
+		return c.Render(http.StatusNotFound, tplName, H{"error": "Invalid email or password"})
 	}
 
 	sess, _ := session.Get("session", c)
@@ -61,6 +59,17 @@ func loginEmail(c echo.Context) error {
 
 	c.String(200, fmt.Sprintf("Logged in with mail %s", user.Email))
 	return nil
+}
+
+func indexPageHandler(ptype db.PageType) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var pages []db.Page
+		res := db.Db.Order("title").Find(&pages, "type = ?", ptype)
+		if err := res.Error; err != nil {
+			return err
+		}
+		return c.Render(200, "pageShow.html", H{"pages": pages})
+	}
 }
 
 func showPageHandler(ptype db.PageType) echo.HandlerFunc {
@@ -83,7 +92,32 @@ func showPageHandler(ptype db.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Page not found")
 		}
 
-		c.Render(200, "showPage.html", H{"page": page})
+		c.Render(200, "pageShow.html", H{"page": page})
+		return nil
+	}
+}
+
+func editPageHandler(ptype db.PageType) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		idParam := c.Param("id")
+		if idParam == "" {
+			log.Println("Invalid " + idParam)
+			return echo.NewHTTPError(404, "Invalid ID")
+		}
+
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			log.Println("Invalid " + idParam)
+			return echo.NewHTTPError(404, "Invalid ID")
+		}
+
+		page := db.FindPage(uint(id), ptype)
+		if page == nil {
+			log.Println("Page not found for " + idParam)
+			return echo.NewHTTPError(404, "Page not found")
+		}
+
+		c.Render(200, "pageEdit.html", H{"page": page})
 		return nil
 	}
 }
@@ -160,13 +194,31 @@ func createServer(r *echo.Echo) {
 
 	r.Use(session.Middleware(cs))
 
-	r.GET("/login", serveTemplate("loginPage"))
+	r.Static("/static", "static")
+	r.GET("/", serveTemplate("home"))
+
+	r.GET("/login", serveTemplate("login"))
 	r.POST("/login", loginEmail)
 
 	r.GET("/professionals/:id", showPageHandler(db.PageUser))
 	r.GET("/wiki/:id", showPageHandler(db.PageWiki))
 	r.GET("/companies/:id", showPageHandler(db.PageCompany))
 	r.GET("/communities/:id", showPageHandler(db.PageCommunity))
+
+	r.GET("/professionals/new", showPageHandler(db.PageUser))
+	r.GET("/wiki/new", showPageHandler(db.PageWiki))
+	r.GET("/companies/new", showPageHandler(db.PageCompany))
+	r.GET("/communities/new", showPageHandler(db.PageCommunity))
+
+	r.GET("/professionals/:id/edit", editPageHandler(db.PageUser))
+	r.GET("/wiki/:id/edit", editPageHandler(db.PageWiki))
+	r.GET("/companies/:id/edit", editPageHandler(db.PageCompany))
+	r.GET("/communities/:id/edit", editPageHandler(db.PageCommunity))
+
+	r.GET("/professionals", indexPageHandler(db.PageUser))
+	r.GET("/wiki", indexPageHandler(db.PageWiki))
+	r.GET("/companies", indexPageHandler(db.PageCompany))
+	r.GET("/communities", indexPageHandler(db.PageCommunity))
 
 	r.POST("/professionals", updatePageHandler)
 	r.POST("/wiki", updatePageHandler)
