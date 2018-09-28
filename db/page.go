@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql/driver"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 )
@@ -28,7 +29,7 @@ type Page struct {
 	Title   string   `gorm:"not null" binding:"required"`
 	Slug    string   `gorm:"unique"`
 	Content string   `binding:"required"`
-	Type    PageType `gorm:"type:int" binding:"required"`
+	Type    PageType `gorm:"type:int" form:"type" binding:"required"`
 }
 
 func FindPage(id uint, ptype PageType) *Page {
@@ -38,4 +39,26 @@ func FindPage(id uint, ptype PageType) *Page {
 		return nil
 	}
 	return &page
+}
+
+func ParsePageType(ptype string) (PageType, error) {
+	t, err := strconv.Atoi(ptype)
+	if err != nil {
+		return 0, err
+	}
+	return PageType(t), nil
+}
+
+func (p PageType) CatName() string {
+	switch p {
+	case PageUser:
+		return "professionals"
+	case PageCommunity:
+		return "communities"
+	case PageCompany:
+		return "companies"
+	case PageWiki:
+		return "wiki"
+	}
+	return ""
 }

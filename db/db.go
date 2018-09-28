@@ -22,6 +22,15 @@ type User struct {
 	Email          string `gorm:"unique"`
 }
 
+func RetrieveUser(id uint, email string) *User {
+	var u User
+	res := Db.First(&u, "email = ? and id = ?", email, id)
+	if res.Error != nil {
+		return nil
+	}
+	return &u
+}
+
 func LoginEmail(email string, password string) *User {
 	var u User
 	res := Db.First(&u, "email = ?", email)
