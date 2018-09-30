@@ -14,7 +14,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 
-	"vigliag/commwiki/db"
+	"github.com/vigliag/isamuni-go/db"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"

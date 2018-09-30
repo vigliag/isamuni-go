@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"vigliag/commwiki/db"
+
+	"github.com/vigliag/isamuni-go/db"
 
 	"github.com/gosimple/slug"
 

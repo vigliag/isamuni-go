@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"vigliag/commwiki/db"
+	"github.com/vigliag/isamuni-go/db"
 
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
