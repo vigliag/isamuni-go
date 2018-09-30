@@ -1,9 +1,15 @@
+{{ template "__header.html" . }}
 <h3>Login</h3>
 <form action="/login" method="post">
+<label for="email">Email
 <input type="text" name="email" id="email"><br>
+</label>
+<label for="password">Password
 <input type="password" name="password" id="password">
+</label>
 <input type="submit" value="Login">
 </form>
 {{ if .error }}
 <p>{{ .error }}</p>
 {{ end }}
+{{ template "__footer.html" }}

@@ -26,10 +26,15 @@ const (
 //Page represents a page in the database
 type Page struct {
 	gorm.Model
-	Title   string   `gorm:"not null" binding:"required"`
-	Slug    string   `gorm:"unique"`
-	Content string   `binding:"required"`
-	Type    PageType `gorm:"type:int" form:"type" binding:"required"`
+	Title    string `gorm:"not null" binding:"required"`
+	Slug     string `gorm:"unique"`
+	Short    string
+	Content  string   `binding:"required"`
+	Type     PageType `gorm:"type:int" form:"type" binding:"required"`
+	OwnerID  uint
+	Owner    User
+	Location string
+	Area     string
 }
 
 func FindPage(id uint, ptype PageType) *Page {
@@ -47,6 +52,10 @@ func ParsePageType(ptype string) (PageType, error) {
 		return 0, err
 	}
 	return PageType(t), nil
+}
+
+func (p PageType) Int() int {
+	return int(p)
 }
 
 func (p PageType) CatName() string {

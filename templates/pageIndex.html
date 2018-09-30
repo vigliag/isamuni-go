@@ -1,5 +1,27 @@
-<ul>
-{{ range .pages }}
-    <li>{{ .title }} : {{ .id }}</li>
+{{ template "__header.html" . }}
+{{$c := .cat}}
+
+<h2>Index of {{.cat}}</h2>
+
+<table>
+    <thead>
+        <tr>
+        <th>Name</th>
+        <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .pages }}
+            <tr>
+                <td><a href="/{{$c}}/{{.ID}}">{{ .Title }}</a></td>
+                <td>{{.Short}}</td>
+            </tr>
+        {{ end }}
+    </tbody>
+</table>
+
+
+{{ if .currentUser }}
+    <p class="float-right"><a href="/{{.cat}}/new">New page</a></p>
 {{ end }}
-</ul>
+{{ template "__footer.html" }}

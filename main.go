@@ -8,6 +8,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/gosimple/slug"
+	"github.com/microcosm-cc/bluemonday"
+	blackfriday "gopkg.in/russross/blackfriday.v2"
 
 	"vigliag/commwiki/db"
 
@@ -18,7 +23,29 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+// Helpers
+/////////////
+
 type H map[string]interface{}
+
+//Template is our template type, that exposes a custom Render method
+type Template struct {
+	templates *template.Template
+}
+
+//Render renders a template given its name, and the data to pass to the template engine
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	if viewContext, isMap := data.(H); isMap {
+		viewContext["currentUser"] = c.Get("currentUser")
+	}
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func RenderMarkdown(m string) template.HTML {
+	unsafe := blackfriday.Run([]byte(m))
+	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+	return template.HTML(html)
+}
 
 func getSessionKey() []byte {
 	sessKey := os.Getenv("SESSION_KEY")
@@ -31,10 +58,17 @@ func getSessionKey() []byte {
 
 func serveTemplate(templateName string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Render(200, templateName+".html", nil)
+		c.Render(200, templateName+".html", H{})
 		return nil
 	}
 }
+
+func PageUrl(p *db.Page) string {
+	return fmt.Sprintf("/%s/%d", p.Type.CatName(), p.ID)
+}
+
+// Handlers
+//////////////////
 
 func loginEmail(c echo.Context) error {
 	tplName := "login.html"
@@ -57,8 +91,7 @@ func loginEmail(c echo.Context) error {
 	sess.Values["userid"] = user.ID
 	sess.Save(c.Request(), c.Response())
 
-	c.String(200, fmt.Sprintf("Logged in with mail %s", user.Email))
-	return nil
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func indexPageHandler(ptype db.PageType) echo.HandlerFunc {
@@ -68,7 +101,17 @@ func indexPageHandler(ptype db.PageType) echo.HandlerFunc {
 		if err := res.Error; err != nil {
 			return err
 		}
-		return c.Render(200, "pageShow.html", H{"pages": pages})
+		cat := ptype.CatName()
+		title := strings.Title(cat)
+		return c.Render(200, "pageIndex.html", H{"pages": pages, "title": title, "cat": cat})
+	}
+}
+
+func newPageHandler(ptype db.PageType) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		p := db.Page{}
+		p.Type = ptype
+		return c.Render(200, "pageEdit.html", H{"page": p})
 	}
 }
 
@@ -92,8 +135,8 @@ func showPageHandler(ptype db.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Page not found")
 		}
 
-		c.Render(200, "pageShow.html", H{"page": page})
-		return nil
+		return c.Render(200, "pageShow.html",
+			H{"page": page, "pageURL": PageUrl(page), "content": RenderMarkdown(page.Content)})
 	}
 }
 
@@ -117,17 +160,23 @@ func editPageHandler(ptype db.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Page not found")
 		}
 
-		c.Render(200, "pageEdit.html", H{"page": page})
-		return nil
+		return c.Render(200, "pageEdit.html", H{"page": page})
 	}
 }
 
-func currentUser(c echo.Context) *db.User {
-	sess, err := session.Get("session", c)
-	if err != nil {
-		return nil
+func mePageHandler(c echo.Context) error {
+	u := currentUser(c)
+	if u == nil {
+		return c.Redirect(http.StatusFound, "/login")
 	}
-	return db.RetrieveUser(sess.Values["userid"].(uint), sess.Values["email"].(string))
+
+	page := db.UserPage(u)
+	if page == nil {
+		page = &db.Page{
+			Title: u.Username,
+		}
+	}
+	return c.Render(200, "pageEdit.html", H{"page": page})
 }
 
 func updatePageHandler(c echo.Context) error {
@@ -141,37 +190,71 @@ func updatePageHandler(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid page type")
 	}
 
+	var p db.Page
+
 	pid, _ := strconv.Atoi(c.FormValue("id"))
 
-	var p db.Page
+	if pid != 0 {
+		res := db.Db.Find(&p, pid)
+		if res.Error != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Editing an invalid page")
+		}
+
+		if p.Type != db.PageWiki && p.OwnerID != u.ID {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Can't edit this page")
+		}
+
+		if p.Type == db.PageUser && db.UserPage(u) != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "User has a page already")
+		}
+
+		p.OwnerID = u.ID
+	}
+
 	p.Title = c.FormValue("title")
-	p.Slug = c.FormValue("slug")
+	if s := c.FormValue("slug"); s != "" {
+		p.Slug = s
+	} else {
+		p.Slug = slug.Make(p.Title)
+	}
+
 	p.Content = c.FormValue("content")
 	p.Type = ptype
 	p.ID = uint(pid)
+	p.Short = c.FormValue("short")
 
 	res := db.Db.Save(&p)
 	if res.Error != nil {
 		log.Println(res.Error)
-		return echo.NewHTTPError(http.StatusBadRequest, "Could not update page")
+		return c.Render(http.StatusBadRequest, "pageEdit.html", H{"page": p, "error": "Could not save page"})
 	}
 
-	return c.Redirect(http.StatusTemporaryRedirect, PageUrl(p))
+	return c.Redirect(http.StatusSeeOther, PageUrl(&p))
 }
 
-func PageUrl(p db.Page) string {
-	return fmt.Sprintf("/%s/%d", p.Type.CatName(), p.ID)
+// Middlewares
+//////////////////
+
+func setCurrentUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		sess, err := session.Get("session", c)
+		if err == nil && sess.Values["userid"] != nil && sess.Values["email"] != nil {
+			user := db.RetrieveUser(sess.Values["userid"].(uint), sess.Values["email"].(string))
+			c.Set("currentUser", user)
+		}
+		return next(c)
+	}
 }
 
-//Template is our template type, that exposes a custom Render method
-type Template struct {
-	templates *template.Template
+func currentUser(c echo.Context) *db.User {
+	if u, ok := c.Get("currentUser").(*db.User); ok {
+		return u
+	}
+	return nil
 }
 
-//Render renders a template given its name, and the data to pass to the template engine
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
+// Startup
+///////////////
 
 func createServer(r *echo.Echo) {
 	t := &Template{
@@ -193,6 +276,8 @@ func createServer(r *echo.Echo) {
 	cs.MaxAge(cs.Options.MaxAge)
 
 	r.Use(session.Middleware(cs))
+	r.Use(middleware.Logger())
+	r.Use(setCurrentUserMiddleware)
 
 	r.Static("/static", "static")
 	r.GET("/", serveTemplate("home"))
@@ -205,10 +290,10 @@ func createServer(r *echo.Echo) {
 	r.GET("/companies/:id", showPageHandler(db.PageCompany))
 	r.GET("/communities/:id", showPageHandler(db.PageCommunity))
 
-	r.GET("/professionals/new", showPageHandler(db.PageUser))
-	r.GET("/wiki/new", showPageHandler(db.PageWiki))
-	r.GET("/companies/new", showPageHandler(db.PageCompany))
-	r.GET("/communities/new", showPageHandler(db.PageCommunity))
+	r.GET("/professionals/new", newPageHandler(db.PageUser))
+	r.GET("/wiki/new", newPageHandler(db.PageWiki))
+	r.GET("/companies/new", newPageHandler(db.PageCompany))
+	r.GET("/communities/new", newPageHandler(db.PageCommunity))
 
 	r.GET("/professionals/:id/edit", editPageHandler(db.PageUser))
 	r.GET("/wiki/:id/edit", editPageHandler(db.PageWiki))
@@ -220,10 +305,9 @@ func createServer(r *echo.Echo) {
 	r.GET("/companies", indexPageHandler(db.PageCompany))
 	r.GET("/communities", indexPageHandler(db.PageCommunity))
 
-	r.POST("/professionals", updatePageHandler)
-	r.POST("/wiki", updatePageHandler)
-	r.POST("/companies", updatePageHandler)
-	r.POST("/communities", updatePageHandler)
+	r.GET("/me", mePageHandler)
+
+	r.POST("/pages", updatePageHandler)
 	return
 }
 
@@ -231,9 +315,10 @@ func main() {
 	db.Connect()
 
 	r := echo.New()
-	r.Use(middleware.Logger())
-	r.Use(middleware.Recover())
 	createServer(r)
+
+	r.Use(middleware.Recover())
+	db.RegisterEmail("vigliag", "vigliag@gmail.com", "password")
 
 	http.ListenAndServe(":8080", r)
 	fmt.Println("Server started")

@@ -1,2 +1,22 @@
-<h2>{{.page.Title}} : {.page.Slug}</h2>
-<p>{{.page.Content}}</p>
+{{ template "__header.html" . }}
+<div class="container">
+<form action="/pages" method="post">
+    <label for="title">Name
+        <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
+    </label>
+    <!--
+        <label for="slug">Slug (empty to autogenerate)
+            <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">
+        </label>
+    -->
+    <label for="short">Short description
+        <input type="text" name="short" id="short" placeholder="Short description" value="{{.page.Slug}}">
+    </label>
+    <label for="content">Content
+        <textarea name="content" id="content" placeholder="Content" value="{{.page.Content}}"></textarea>
+    </label>
+    <input type="hidden" name="type" value="{{.page.Type.Int}}">
+    <input type="submit">
+</form>
+</div>
+{{ template "__footer.html"}}

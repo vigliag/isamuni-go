@@ -22,6 +22,15 @@ type User struct {
 	Email          string `gorm:"unique"`
 }
 
+func UserPage(u *User) *Page {
+	var page Page
+	res := Db.Find(&page, "owner_id = ? and type = ?", u.ID, PageUser)
+	if res.Error != nil {
+		return nil
+	}
+	return &page
+}
+
 func RetrieveUser(id uint, email string) *User {
 	var u User
 	res := Db.First(&u, "email = ? and id = ?", email, id)
@@ -77,7 +86,7 @@ func (u *User) CheckPassword(password string) bool {
 
 func Connect() *gorm.DB {
 	var err error
-	Db, err = gorm.Open("sqlite3", ":memory:")
+	Db, err = gorm.Open("sqlite3", "database.db")
 	if err != nil {
 		panic(err)
 	}

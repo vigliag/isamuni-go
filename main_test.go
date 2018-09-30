@@ -15,6 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func serveRequest(h http.Handler, req *http.Request) *http.Response {
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	return w.Result()
+}
+
 func testHTMLResponse(t *testing.T, router *echo.Echo, path string) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", path, nil)
@@ -27,14 +33,6 @@ func testHTMLResponse(t *testing.T, router *echo.Echo, path string) {
 	assert.Equal(t, "text/html; charset=utf-8", strings.ToLower(headers.Get("content-type")))
 }
 
-func testResponseCode(t *testing.T, router *echo.Echo, path string, code int) {
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", path, nil)
-	router.ServeHTTP(w, req)
-
-	log.Println("Testing url ", path)
-	assert.Equal(t, code, w.Code)
-}
 func TestPageHandler(t *testing.T) {
 	db.ConnectTestDB()
 
@@ -50,7 +48,31 @@ func TestPageHandler(t *testing.T) {
 	assert.NotZero(t, p.ID)
 
 	testHTMLResponse(t, r, fmt.Sprintf("/companies/%d", p.ID))
-	testResponseCode(t, r, "/companies/notExisting", 404)
+
+	res := serveRequest(r, httptest.NewRequest("GET", "/companies/notExisting", nil))
+	assert.Equal(t, 404, res.StatusCode)
+}
+
+func TestMeHandler(t *testing.T) {
+	db.ConnectTestDB()
+	_, err := db.RegisterEmail("vigliag", "vigliag@gmail.com", "password")
+	assert.NoError(t, err)
+	r := echo.New()
+	createServer(r)
+
+	req := httptest.NewRequest("GET", "/me", nil)
+
+	// Before login
+	res := serveRequest(r, req)
+	assert.Equal(t, http.StatusFound, res.StatusCode)
+	redirectUrl, _ := res.Location()
+	assert.Equal(t, "/login", redirectUrl.Path)
+
+	// After login
+	lres := login(r, "vigliag@gmail.com", "password")
+	copyCookies(lres, req)
+	res = serveRequest(r, req)
+	assert.Equal(t, 200, res.StatusCode)
 }
 
 func loginRequest(username, password string) *http.Request {
@@ -76,7 +98,9 @@ func TestLogin(t *testing.T) {
 	req := loginRequest("vigliag@gmail.com", "password")
 	r.ServeHTTP(w, req)
 	res := w.Result()
-	assert.Equal(t, 200, res.StatusCode)
+	if res.StatusCode >= 400 {
+		assert.Fail(t, "Login returned error status code")
+	}
 	assert.NotEmpty(t, res.Cookies)
 
 	w = httptest.NewRecorder()
@@ -93,7 +117,7 @@ func login(h http.Handler, email string, password string) *http.Response {
 
 	h.ServeHTTP(w, req)
 	res := w.Result()
-	if res.StatusCode != 200 {
+	if res.StatusCode >= 400 {
 		panic("Login failed")
 	}
 	return res
@@ -128,14 +152,14 @@ func TestInsertPage(t *testing.T) {
 	form.Set("type", fmt.Sprintf("%d", int(db.PageCompany)))
 	form.Set("content", "Example contents")
 
-	req := formRequest("/companies", form)
+	req := formRequest("/pages", form)
 	copyCookies(lres, req)
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	res := w.Result()
 
-	assert.Equal(t, 307, res.StatusCode)
+	assert.Equal(t, http.StatusSeeOther, res.StatusCode)
 
 	createdPageUrl, err := res.Location()
 	assert.NoError(t, err)
@@ -152,4 +176,5 @@ func TestUserPages(t *testing.T) {
 	createServer(r)
 
 	testHTMLResponse(t, r, "/login")
+	testHTMLResponse(t, r, "/companies/new")
 }

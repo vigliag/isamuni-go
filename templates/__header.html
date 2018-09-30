@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="/static/normalize.css">
+    <link rel="stylesheet" href="/static/milligram.css">
+    <link rel="stylesheet" href="/static/main.css">
+    <title>CommunityWiki {{- if .title}}: {{ .title }} {{end}}</title>
+</head>
+<body>
+    <div class="wrapper">
+        <nav class="navigation clearfix">
+                <section class="container">
+                    <a class="navigation-title" href="/"><h1 class="title">CommWiki</h1></a>
+                    <ul class="navigation-list float-right">
+                        <li class="navigation-item"><a class="navigation-link" href="/professionals">Pros</a></li>
+                        <li class="navigation-item"><a class="navigation-link" href="/companies">Companies</a></li>
+                        <li class="navigation-item"><a class="navigation-link" href="/communities">Communities</a></li>
+                        <li class="navigation-item"><a class="navigation-link" href="/wiki">Wiki</a></li>
+                    </ul>
+                </section>
+        </nav>
+
+        <section class="container clearfix">
+                <span class="float-right">
+                    {{ if .currentUser }}
+                        Logged in as {{ .currentUser.Email }} <a href="/logout">Logout</a>, <a href="/me">Profile</a>
+                    {{ else }}
+                        Not logged in <a href="/login">Login</a> to edit the contents
+                    {{ end }}
+                </span>
+        </section>
+        <div class="container">
