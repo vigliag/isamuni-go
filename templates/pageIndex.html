@@ -1,6 +1,4 @@
 {{ template "__header.html" . }}
-{{$c := .cat}}
-
 <h2>Index of {{.cat}}</h2>
 
 <table>
@@ -8,13 +6,19 @@
         <tr>
         <th>Name</th>
         <th>Description</th>
+        {{ if eq .cat "companies" "communities" }}
+            <th>Area</th>
+        {{ end }}
         </tr>
     </thead>
     <tbody>
         {{ range .pages }}
             <tr>
-                <td><a href="/{{$c}}/{{.ID}}">{{ .Title }}</a></td>
+                <td><a href="/{{$.cat}}/{{.ID}}">{{ .Title }}</a></td>
                 <td>{{.Short}}</td>
+                {{ if eq $.cat "companies" "communities" }}
+                    <td>{{.Area}}</td>
+                {{ end }}
             </tr>
         {{ end }}
     </tbody>

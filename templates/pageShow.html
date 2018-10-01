@@ -1,6 +1,9 @@
 {{ template "__header.html" . }}
-<h2>{{.page.Title}}</h2>
-<h4>{{.page.Short}}</h4>
+<div class="pageTitle">
+    <h2>{{.page.Title}}</h2>
+    <h4>{{.page.Short}}</h4>
+    <span class="website"><a href="{{.page.Website}}">{{.page.Website}}</a></span>
+</div>
 <div id="user-content">{{.content}}</div>
 {{ if .currentUser }}
 <p class="float-right"><a href="{{.pageURL}}/edit">Edit</a> this page</p>

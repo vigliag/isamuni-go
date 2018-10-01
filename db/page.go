@@ -35,6 +35,8 @@ type Page struct {
 	Owner    User
 	Location string
 	Area     string
+	Sector   string
+	Website  string
 }
 
 func FindPage(id uint, ptype PageType) *Page {

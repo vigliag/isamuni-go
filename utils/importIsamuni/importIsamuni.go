@@ -21,24 +21,7 @@ const (
 	dbname   = "isamuni_prod"
 )
 
-func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-
-	isamunidb, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	defer isamunidb.Close()
-
-	err = isamunidb.Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	db.Connect()
+func getTags(isamunidb *sql.DB) map[int]string {
 
 	tags := make(map[int]string)
 
@@ -58,7 +41,13 @@ func main() {
 		tags[id] = tgs
 	}
 
-	rows, err = isamunidb.Query("select id, name, occupation, description, projects, links, tags from users where public_profile= true;")
+	return tags
+}
+
+func copyUsers(isamunidb *sql.DB) {
+	tags := getTags(isamunidb)
+
+	rows, err := isamunidb.Query("select id, name, occupation, description, projects, links, tags from users where public_profile= true;")
 	if err != nil {
 		panic(err)
 	}
@@ -113,9 +102,82 @@ func main() {
 		}
 		fmt.Printf("user %s: %s\n%s\n\n", p.Title, p.Short, p.Content)
 	}
+}
 
-	//Pages
+func copyPages(isamunidb *sql.DB) {
+	q := `select name, kind, website,
+				concat_ws(chr(10), links, fbpage, twitterpage) as links,
+				location, province, description, sector
+		 from pages;`
+	rows, err := isamunidb.Query(q)
+	if err != nil {
+		panic(err)
+	}
+	for rows.Next() {
+		var (
+			name        string
+			kind        int
+			website     sql.NullString
+			links       sql.NullString
+			location    sql.NullString
+			province    sql.NullString
+			description sql.NullString
+			sector      sql.NullString
+		)
 
+		err = rows.Scan(&name, &kind, &website, &links, &location, &province, &description, &sector)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		linksString := strings.TrimSpace(links.String)
+		var linksLines []string
+		for _, line := range strings.Fields(linksString) {
+			linksLines = append(linksLines, "- "+line)
+		}
+		linksString = strings.Join(linksLines, "\n")
+
+		p := db.Page{
+			Title:   name,
+			Short:   sector.String,
+			Slug:    slug.Make(name),
+			Content: description.String + "\n### Links\n" + linksString,
+			Sector:  sector.String,
+			Website: website.String,
+			Type:    kindToPageType(kind),
+			Area:    province.String,
+		}
+
+		res := db.Db.Save(&p)
+		if res.Error != nil {
+			fmt.Println(res.Error)
+			continue
+		}
+	}
+}
+
+func main() {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	isamunidb, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	defer isamunidb.Close()
+
+	err = isamunidb.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	db.Connect()
+
+	copyUsers(isamunidb)
+	copyPages(isamunidb)
 }
 
 func kindToPageType(kind int) db.PageType {

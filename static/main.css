@@ -44,3 +44,15 @@
     margin-left: 2.5rem;
     position: relative;
 }
+
+.pageTitle > h2, .pageTitle > h4 {
+    margin-bottom: 0.8rem;
+}
+
+section.login {
+    margin-bottom: 1rem;
+}
+
+.pageTitle {
+    margin-bottom: 2rem;
+}
