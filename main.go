@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -62,7 +63,7 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 	}
 }
 
-func PageUrl(p *db.Page) string {
+func PageURL(p *db.Page) string {
 	return fmt.Sprintf("/%s/%d", p.Type.CatName(), p.ID)
 }
 
@@ -156,12 +157,13 @@ func createServer(r *echo.Echo) *echo.Echo {
 func main() {
 	db.Connect()
 
-	r := echo.New()
-	createServer(r)
+	r := createServer(echo.New())
 
 	r.Use(middleware.Recover())
 	db.RegisterEmail("vigliag", "vigliag@gmail.com", "password")
 
-	http.ListenAndServe(":8080", r)
-	fmt.Println("Server started")
+	listenURL := ":8080"
+	fmt.Println("Server started on " + listenURL)
+
+	log.Fatal(http.ListenAndServe(listenURL, r))
 }

@@ -71,7 +71,7 @@ func showPageH(ptype db.PageType) echo.HandlerFunc {
 		}
 
 		return c.Render(200, "pageShow.html",
-			H{"page": page, "pageURL": PageUrl(page), "content": RenderMarkdown(page.Content)})
+			H{"page": page, "pageURL": PageURL(page), "content": RenderMarkdown(page.Content)})
 	}
 }
 
@@ -124,7 +124,7 @@ func updatePageH(c echo.Context) error {
 	pid, _ := strconv.Atoi(c.FormValue("id"))
 
 	if pid != 0 {
-		//Page exists
+		//Trying to update an existing page
 
 		res := db.Db.Find(&p, pid)
 		if res.Error != nil {
@@ -160,5 +160,5 @@ func updatePageH(c echo.Context) error {
 		return c.Render(http.StatusBadRequest, "pageEdit.html", H{"page": p, "error": "Could not save page"})
 	}
 
-	return c.Redirect(http.StatusSeeOther, PageUrl(&p))
+	return c.Redirect(http.StatusSeeOther, PageURL(&p))
 }
