@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql/driver"
-	"strconv"
 
 	"github.com/jinzhu/gorm"
 )
@@ -16,6 +15,7 @@ func (u *PageType) Scan(value interface{}) error { *u = PageType(value.(int64));
 //Value serializes a PageType from the database
 func (u PageType) Value() (driver.Value, error) { return int64(u), nil }
 
+//Kind or namespace of a page
 const (
 	PageUser      PageType = 0
 	PageCompany            = iota
@@ -26,11 +26,11 @@ const (
 //Page represents a page in the database
 type Page struct {
 	gorm.Model
-	Title    string `gorm:"not null" binding:"required"`
+	Title    string `gorm:"not null"`
 	Slug     string `gorm:"unique"`
 	Short    string
-	Content  string   `binding:"required"`
-	Type     PageType `gorm:"type:int" form:"type" binding:"required"`
+	Content  string
+	Type     PageType `gorm:"type:int" form:"type"`
 	OwnerID  uint
 	Owner    User
 	Location string
@@ -39,6 +39,7 @@ type Page struct {
 	Website  string
 }
 
+//FindPage returns a page of a given type by ID or null
 func FindPage(id uint, ptype PageType) *Page {
 	var page Page
 	res := Db.First(&page, " id = ? and type = ? ", id, ptype)
@@ -46,14 +47,6 @@ func FindPage(id uint, ptype PageType) *Page {
 		return nil
 	}
 	return &page
-}
-
-func ParsePageType(ptype string) (PageType, error) {
-	t, err := strconv.Atoi(ptype)
-	if err != nil {
-		return 0, err
-	}
-	return PageType(t), nil
 }
 
 func (p PageType) Int() int {

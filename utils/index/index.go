@@ -19,11 +19,11 @@ type doc struct {
 	Sector  string
 }
 
-var re = regexp.MustCompile(`(?m)^#+.+$`)
+var headersRegex = regexp.MustCompile(`(?m)^#+.+$`)
 
 func pageToDoc(p *db.Page) doc {
 	var d doc
-	d.Content = re.ReplaceAllString(p.Content, "")
+	d.Content = headersRegex.ReplaceAllString(p.Content, "")
 	d.Type = p.Type.CatName()
 	d.Sector = p.Sector
 	d.Area = p.Area

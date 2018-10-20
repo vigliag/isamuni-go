@@ -94,7 +94,7 @@ func loginEmail(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
-func indexPageHandler(ptype db.PageType) echo.HandlerFunc {
+func indexPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var pages []db.Page
 		res := db.Db.Order("title").Find(&pages, "type = ?", ptype)
@@ -107,7 +107,7 @@ func indexPageHandler(ptype db.PageType) echo.HandlerFunc {
 	}
 }
 
-func newPageHandler(ptype db.PageType) echo.HandlerFunc {
+func newPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		p := db.Page{}
 		p.Type = ptype
@@ -115,7 +115,7 @@ func newPageHandler(ptype db.PageType) echo.HandlerFunc {
 	}
 }
 
-func showPageHandler(ptype db.PageType) echo.HandlerFunc {
+func showPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		idParam := c.Param("id")
 		if idParam == "" {
@@ -140,7 +140,7 @@ func showPageHandler(ptype db.PageType) echo.HandlerFunc {
 	}
 }
 
-func editPageHandler(ptype db.PageType) echo.HandlerFunc {
+func editPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		idParam := c.Param("id")
 		if idParam == "" {
@@ -164,7 +164,7 @@ func editPageHandler(ptype db.PageType) echo.HandlerFunc {
 	}
 }
 
-func mePageHandler(c echo.Context) error {
+func mePageH(c echo.Context) error {
 	u := currentUser(c)
 	if u == nil {
 		return c.Redirect(http.StatusFound, "/login")
@@ -179,22 +179,25 @@ func mePageHandler(c echo.Context) error {
 	return c.Render(200, "pageEdit.html", H{"page": page})
 }
 
-func updatePageHandler(c echo.Context) error {
+func updatePageH(c echo.Context) error {
 	u := currentUser(c)
 	if u == nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Not logged in")
 	}
 
-	ptype, err := db.ParsePageType(c.FormValue("type"))
+	iptype, err := strconv.Atoi(c.FormValue("type"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid page type")
 	}
+	ptype := db.PageType(iptype)
 
 	var p db.Page
 
 	pid, _ := strconv.Atoi(c.FormValue("id"))
 
 	if pid != 0 {
+		//Page exists
+
 		res := db.Db.Find(&p, pid)
 		if res.Error != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Editing an invalid page")
@@ -285,29 +288,29 @@ func createServer(r *echo.Echo) {
 	r.GET("/login", serveTemplate("login"))
 	r.POST("/login", loginEmail)
 
-	r.GET("/professionals/:id", showPageHandler(db.PageUser))
-	r.GET("/wiki/:id", showPageHandler(db.PageWiki))
-	r.GET("/companies/:id", showPageHandler(db.PageCompany))
-	r.GET("/communities/:id", showPageHandler(db.PageCommunity))
+	r.GET("/professionals/:id", showPageH(db.PageUser))
+	r.GET("/wiki/:id", showPageH(db.PageWiki))
+	r.GET("/companies/:id", showPageH(db.PageCompany))
+	r.GET("/communities/:id", showPageH(db.PageCommunity))
 
-	r.GET("/professionals/new", newPageHandler(db.PageUser))
-	r.GET("/wiki/new", newPageHandler(db.PageWiki))
-	r.GET("/companies/new", newPageHandler(db.PageCompany))
-	r.GET("/communities/new", newPageHandler(db.PageCommunity))
+	r.GET("/professionals/new", newPageH(db.PageUser))
+	r.GET("/wiki/new", newPageH(db.PageWiki))
+	r.GET("/companies/new", newPageH(db.PageCompany))
+	r.GET("/communities/new", newPageH(db.PageCommunity))
 
-	r.GET("/professionals/:id/edit", editPageHandler(db.PageUser))
-	r.GET("/wiki/:id/edit", editPageHandler(db.PageWiki))
-	r.GET("/companies/:id/edit", editPageHandler(db.PageCompany))
-	r.GET("/communities/:id/edit", editPageHandler(db.PageCommunity))
+	r.GET("/professionals/:id/edit", editPageH(db.PageUser))
+	r.GET("/wiki/:id/edit", editPageH(db.PageWiki))
+	r.GET("/companies/:id/edit", editPageH(db.PageCompany))
+	r.GET("/communities/:id/edit", editPageH(db.PageCommunity))
 
-	r.GET("/professionals", indexPageHandler(db.PageUser))
-	r.GET("/wiki", indexPageHandler(db.PageWiki))
-	r.GET("/companies", indexPageHandler(db.PageCompany))
-	r.GET("/communities", indexPageHandler(db.PageCommunity))
+	r.GET("/professionals", indexPageH(db.PageUser))
+	r.GET("/wiki", indexPageH(db.PageWiki))
+	r.GET("/companies", indexPageH(db.PageCompany))
+	r.GET("/communities", indexPageH(db.PageCommunity))
 
-	r.GET("/me", mePageHandler)
+	r.GET("/me", mePageH)
 
-	r.POST("/pages", updatePageHandler)
+	r.POST("/pages", updatePageH)
 	return
 }
 
