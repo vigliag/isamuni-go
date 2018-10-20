@@ -98,7 +98,7 @@ func currentUser(c echo.Context) *db.User {
 // Startup
 ///////////////
 
-func createServer(r *echo.Echo) {
+func createServer(r *echo.Echo) *echo.Echo {
 	t := &Template{
 		templates: template.Must(template.ParseGlob("templates/*.html")),
 	}
@@ -150,7 +150,7 @@ func createServer(r *echo.Echo) {
 	r.GET("/me", mePageH)
 
 	r.POST("/pages", updatePageH)
-	return
+	return r
 }
 
 func main() {
