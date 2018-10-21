@@ -146,7 +146,7 @@ func copyPages(isamunidb *sql.DB) {
 			Sector:  sector.String,
 			Website: website.String,
 			Type:    kindToPageType(kind),
-			Area:    province.String,
+			City:    province.String,
 		}
 
 		res := db.Db.Save(&p)
@@ -182,9 +182,9 @@ func main() {
 
 func kindToPageType(kind int) db.PageType {
 	switch kind {
-	case 0:
-		return db.PageCommunity
 	case 1:
+		return db.PageCommunity
+	case 0:
 		return db.PageCompany
 	}
 	return 0

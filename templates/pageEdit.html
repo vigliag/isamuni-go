@@ -1,22 +1,35 @@
 {{ template "__header.html" . }}
 <div class="container">
-<form action="/pages" method="post">
+
+{{ if and (eq .currentUser.Role "admin") (.versions) }}
+    <h3>Versions</h3>
+    <ul>
+        {{ range .versions }}
+            <li>{{.User.Username }} - {{.ID}}</li>
+        {{ end }}
+    </ul>
+{{ end }}
+
+{{ if .versions }}
+    <p>Showing version: {{ .shownVersion }}</p>
+{{ end }}
+
+<form action="{{ or .action "/pages" }}" method="post">
     <label for="title">Name
         <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
     </label>
-    <!--
-        <label for="slug">Slug (empty to autogenerate)
-            <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">
-        </label>
-    -->
-    <label for="short">Short description
-        <input type="text" name="short" id="short" placeholder="Short description" value="{{.page.Slug}}">
+    {{ if eq .currentUser.Role "admin" }}
+    <label for="slug">Slug (empty to autogenerate)
+        <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">
     </label>
+    {{ end }}
     <label for="content">Content
-        <textarea name="content" id="content" placeholder="Content" value="{{.page.Content}}"></textarea>
+        <textarea name="content" id="content" placeholder="Content">{{ .shownContent }}</textarea>
     </label>
     <input type="hidden" name="type" value="{{.page.Type.Int}}">
-    <input type="submit">
+    <input type="Submit" value="Save {{ if eq .currentUser.Role "admin" }} and approve{{ end }}">
+    
+    <p>Your version will be saved to the database. You can re-edit it by editing the page. It will be visible to all users after admin approval</p>
 </form>
 </div>
 {{ template "__footer.html"}}

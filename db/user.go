@@ -14,6 +14,7 @@ type User struct {
 	HashedPassword string `gorm:"not null"`
 	Salt           string `gorm:"not null"`
 	Email          string `gorm:"unique"`
+	Role           string
 }
 
 func UserPage(u *User) *Page {
@@ -48,10 +49,11 @@ func LoginEmail(email string, password string) *User {
 	return &u
 }
 
-func RegisterEmail(username string, email string, password string) (*User, error) {
+func RegisterEmail(username string, email string, password string, role string) (*User, error) {
 	u := User{
 		Username: username,
 		Email:    email,
+		Role:     role,
 	}
 	u.SetPassword(password)
 	res := Db.Save(&u)

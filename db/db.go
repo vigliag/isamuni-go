@@ -17,7 +17,7 @@ func Connect() *gorm.DB {
 		panic(err)
 	}
 
-	Db.AutoMigrate(&User{}, &Page{})
+	Db.AutoMigrate(&User{}, &Page{}, &ContentVersion{})
 
 	return Db
 }
@@ -29,5 +29,9 @@ func ConnectTestDB() {
 		panic(err)
 	}
 
-	Db.AutoMigrate(&User{}, &Page{})
+	Db.AutoMigrate(&User{}, &Page{}, &ContentVersion{})
+}
+
+func Close() {
+	Db.Close()
 }

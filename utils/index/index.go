@@ -15,7 +15,7 @@ import (
 type doc struct {
 	Content string
 	Type    string
-	Area    string
+	City    string
 	Sector  string
 }
 
@@ -26,7 +26,7 @@ func pageToDoc(p *db.Page) doc {
 	d.Content = headersRegex.ReplaceAllString(p.Content, "")
 	d.Type = p.Type.CatName()
 	d.Sector = p.Sector
-	d.Area = p.Area
+	d.City = p.City
 	return d
 }
 
@@ -63,7 +63,7 @@ func main() {
 	search := bleve.NewSearchRequest(query)
 
 	search.AddFacet("sector", bleve.NewFacetRequest("Sector", 10))
-	search.AddFacet("area", bleve.NewFacetRequest("Area", 10))
+	search.AddFacet("city", bleve.NewFacetRequest("City", 10))
 	search.AddFacet("type", bleve.NewFacetRequest("Type", 10))
 
 	search.Highlight = bleve.NewHighlight()

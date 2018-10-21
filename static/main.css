@@ -56,3 +56,7 @@ section.login {
 .pageTitle {
     margin-bottom: 2rem;
 }
+
+textarea {
+    height: 300px;
+}

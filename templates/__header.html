@@ -14,24 +14,24 @@
 <body>
     <div class="wrapper">
         <nav class="navigation clearfix">
-                <section class="container">
-                    <a class="navigation-title" href="/"><h1 class="title">CommWiki</h1></a>
-                    <ul class="navigation-list float-right">
-                        <li class="navigation-item"><a class="navigation-link" href="/professionals">Pros</a></li>
-                        <li class="navigation-item"><a class="navigation-link" href="/companies">Companies</a></li>
-                        <li class="navigation-item"><a class="navigation-link" href="/communities">Communities</a></li>
-                        <li class="navigation-item"><a class="navigation-link" href="/wiki">Wiki</a></li>
-                    </ul>
-                </section>
+            <section class="container">
+                <a class="navigation-title" href="/"><h1 class="title">CommWiki</h1></a>
+                <ul class="navigation-list float-right">
+                    <li class="navigation-item"><a class="navigation-link" href="/professionals">Pros</a></li>
+                    <li class="navigation-item"><a class="navigation-link" href="/companies">Companies</a></li>
+                    <li class="navigation-item"><a class="navigation-link" href="/communities">Communities</a></li>
+                    <li class="navigation-item"><a class="navigation-link" href="/wiki">Wiki</a></li>
+                </ul>
+            </section>
         </nav>
 
         <section class="login container clearfix">
-                <span class="float-right">
-                    {{ if .currentUser }}
-                        Logged in as {{ .currentUser.Email }} <a href="/logout">Logout</a>, <a href="/me">Profile</a>
-                    {{ else }}
-                        Not logged in <a href="/login">Login</a> to edit the contents
-                    {{ end }}
-                </span>
+            <span class="float-right">
+                {{ if .currentUser }}
+                    Logged in as {{ .currentUser.Email }} <a href="/logout">Logout</a>, <a href="/me">Profile</a>
+                {{ else }}
+                    Not logged in <a href="/login?redir={{ .path }}">Login</a> to edit the contents
+                {{ end }}
+            </span>
         </section>
         <div class="container">

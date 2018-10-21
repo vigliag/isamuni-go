@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -12,10 +13,23 @@ import (
 	"github.com/vigliag/isamuni-go/db"
 )
 
-func loginEmail(c echo.Context) error {
+func logout(c echo.Context) error {
+	sess, _ := session.Get("session", c)
+	sess.Values["email"] = ""
+	sess.Values["userid"] = uint(0)
+	sess.Save(c.Request(), c.Response())
+	return c.Redirect(http.StatusSeeOther, "/")
+}
+
+func loginWithEmail(c echo.Context) error {
 	tplName := "login.html"
 	email := c.FormValue("email")
 	password := c.FormValue("password")
+	redirect := c.FormValue("redir")
+
+	if redirect == "" {
+		redirect = "/"
+	}
 
 	if email == "" || password == "" {
 		log.Println("Empty email or password")
@@ -33,7 +47,7 @@ func loginEmail(c echo.Context) error {
 	sess.Values["userid"] = user.ID
 	sess.Save(c.Request(), c.Response())
 
-	return c.Redirect(http.StatusSeeOther, "/")
+	return c.Redirect(http.StatusSeeOther, redirect)
 }
 
 func indexPageH(ptype db.PageType) echo.HandlerFunc {
@@ -51,6 +65,11 @@ func indexPageH(ptype db.PageType) echo.HandlerFunc {
 
 func newPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		u := currentUser(c)
+		if u == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not logged in")
+		}
+
 		p := db.Page{}
 		p.Type = ptype
 		return c.Render(200, "pageEdit.html", H{"page": p})
@@ -59,6 +78,7 @@ func newPageH(ptype db.PageType) echo.HandlerFunc {
 
 func showPageH(ptype db.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		u := currentUser(c)
 		id := intParameter(c, "id")
 		if id == 0 {
 			return echo.NewHTTPError(404, "Invalid ID")
@@ -71,24 +91,10 @@ func showPageH(ptype db.PageType) echo.HandlerFunc {
 		}
 
 		return c.Render(200, "pageShow.html",
-			H{"page": page, "pageURL": PageURL(page), "content": RenderMarkdown(page.Content)})
-	}
-}
-
-func editPageH(ptype db.PageType) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		id := intParameter(c, "id")
-		if id == 0 {
-			return echo.NewHTTPError(404, "Invalid ID")
-		}
-
-		page := db.FindPage(uint(id), ptype)
-		if page == nil {
-			log.Printf("Page not found for %v\n", id)
-			return echo.NewHTTPError(404, "Page not found")
-		}
-
-		return c.Render(200, "pageEdit.html", H{"page": page})
+			H{"page": page, "pageURL": PageURL(page),
+				"content": RenderMarkdown(page.Content),
+				"canEdit": db.CanEdit(page, u),
+			})
 	}
 }
 
@@ -104,9 +110,70 @@ func mePageH(c echo.Context) error {
 			Title: u.Username,
 		}
 	}
-	return c.Render(200, "pageEdit.html", H{"page": page})
+
+	action := "/pages"
+	if page.ID != 0 {
+		fmt.Sprintf("/pages/%d", page.ID)
+	}
+	return c.Render(200, "pageEdit.html", H{"page": page, "action": action})
 }
 
+// shows edit form for a page
+// if user is admin, it should also show a list of versions, containing:
+// - the current version
+// - all versions greater than current
+// and the form should be populated with the contents of the latest version
+// the version shown in the editor should be clearly indicated
+func editPageH(ptype db.PageType) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		u := currentUser(c)
+		if u == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Not logged in")
+		}
+
+		id := intParameter(c, "id")
+		if id == 0 {
+			return echo.NewHTTPError(404, "Invalid ID")
+		}
+
+		page := db.FindPage(uint(id), ptype)
+		if page == nil {
+			log.Printf("Page not found for %v\n", id)
+			return echo.NewHTTPError(404, "Page not found")
+		}
+		if !db.CanEdit(page, u) {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Can't edit this page")
+		}
+
+		versions, err := db.FindNewerPageVersions(page)
+		if err != nil {
+			log.Println(err)
+		}
+
+		shownContent := page.Content
+		shownVersion := "Current"
+		if len(versions) > 0 {
+			shownContent = versions[0].Content
+			shownVersion = fmt.Sprintf("revision %v by %v at %v", versions[0].ID, versions[0].User.Username, versions[0].UpdatedAt)
+		}
+
+		action := "/pages"
+		if page.ID != 0 {
+			action = fmt.Sprintf("/pages/%d", page.ID)
+		}
+		return c.Render(200, "pageEdit.html",
+			H{"page": page, "versions": versions,
+				"shownContent": shownContent, "shownVersion": shownVersion, "action": action})
+	}
+}
+
+// receives POST.
+// Id parameter is the page to edit
+//
+// if Page has an owner, only the owner can edit it
+// if Page has no owner, on save a new ContentVersion is created and,
+//    if user is admin, the version is also saved in the Page model
+//    if user is not admin, a notification is generated
 func updatePageH(c echo.Context) error {
 	u := currentUser(c)
 	if u == nil {
@@ -121,42 +188,46 @@ func updatePageH(c echo.Context) error {
 
 	var p db.Page
 
-	pid, _ := strconv.Atoi(c.FormValue("id"))
+	pid := intParameter(c, "id")
 
 	if pid != 0 {
 		//Trying to update an existing page
-
 		res := db.Db.Find(&p, pid)
+
 		if res.Error != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Editing an invalid page")
 		}
 
-		if p.Type != db.PageWiki && p.OwnerID != u.ID {
-			return echo.NewHTTPError(http.StatusUnauthorized, "Can't edit this page")
+		if !db.CanEdit(&p, u) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Only the owner of this page can edit it")
 		}
+	} else {
+		// New page
 
-		if p.Type == db.PageUser && db.UserPage(u) != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "User has a page already")
+		if ptype == db.PageUser {
+			if db.UserPage(u) != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "This user has a page already")
+			} else {
+				p.OwnerID = u.ID
+			}
 		}
-
-		p.OwnerID = u.ID
 	}
 
+	// Assign values from the request
 	p.Title = c.FormValue("title")
 	if s := c.FormValue("slug"); s != "" {
 		p.Slug = s
 	} else {
 		p.Slug = slug.Make(p.Title)
 	}
-
 	p.Content = c.FormValue("content")
 	p.Type = ptype
 	p.ID = uint(pid)
-	p.Short = c.FormValue("short")
 
-	res := db.Db.Save(&p)
-	if res.Error != nil {
-		log.Println(res.Error)
+	// Save the page
+	err = db.SavePage(&p, u)
+	if err != nil {
+		log.Println(err)
 		return c.Render(http.StatusBadRequest, "pageEdit.html", H{"page": p, "error": "Could not save page"})
 	}
 

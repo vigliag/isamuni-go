@@ -36,6 +36,7 @@ type Template struct {
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	if viewContext, isMap := data.(H); isMap {
 		viewContext["currentUser"] = c.Get("currentUser")
+		viewContext["path"] = c.Request().URL.Path
 	}
 	return t.templates.ExecuteTemplate(w, name, data)
 }
@@ -54,6 +55,12 @@ func getSessionKey() []byte {
 		return securecookie.GenerateRandomKey(32)
 	}
 	return []byte(sessKey)
+}
+
+func loginPage(c echo.Context) error {
+	redirParam := c.QueryParam("redir")
+	c.Render(200, "login.html", H{"redir": redirParam})
+	return nil
 }
 
 func serveTemplate(templateName string) echo.HandlerFunc {
@@ -118,6 +125,8 @@ func createServer(r *echo.Echo) *echo.Echo {
 	}
 	cs.MaxAge(cs.Options.MaxAge)
 
+	r.Pre(middleware.RemoveTrailingSlash())
+
 	r.Use(session.Middleware(cs))
 	r.Use(middleware.Logger())
 	r.Use(setCurrentUserMiddleware)
@@ -125,8 +134,10 @@ func createServer(r *echo.Echo) *echo.Echo {
 	r.Static("/static", "static")
 	r.GET("/", serveTemplate("home"))
 
-	r.GET("/login", serveTemplate("login"))
-	r.POST("/login", loginEmail)
+	r.GET("/login", loginPage)
+	r.GET("/logout", loginPage)
+	r.POST("/login", loginWithEmail)
+	r.POST("/logout", logout)
 
 	r.GET("/professionals/:id", showPageH(db.PageUser))
 	r.GET("/wiki/:id", showPageH(db.PageWiki))
@@ -151,6 +162,7 @@ func createServer(r *echo.Echo) *echo.Echo {
 	r.GET("/me", mePageH)
 
 	r.POST("/pages", updatePageH)
+	r.POST("/pages/:id", updatePageH)
 	return r
 }
 
@@ -159,8 +171,10 @@ func main() {
 
 	r := createServer(echo.New())
 
-	r.Use(middleware.Recover())
-	db.RegisterEmail("vigliag", "vigliag@gmail.com", "password")
+	//r.Use(middleware.Recover())
+
+	db.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
+	db.RegisterEmail("testuser", "testuser@example.com", "password", "user")
 
 	listenURL := ":8080"
 	fmt.Println("Server started on " + listenURL)
