@@ -9,7 +9,11 @@ import (
 var headerRegex *regexp.Regexp = regexp.MustCompile(`^#+\s*(.+)$`)
 var definitionRegex *regexp.Regexp = regexp.MustCompile(`^\s*[-\*]?\s*(.+)$`)
 
-func ParseContent(content string, dataHeader string) map[string]string {
+// ParseContent parses some markdown-like content into its sections,
+// returning a map[sectionName]content.
+// If a section called "data" is met, its contents are interpreted "key:value"
+// pairs, and added to the returned map.
+func ParseContent(content string, dataSectionName string) map[string]string {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	currentHeader := "short"
@@ -32,7 +36,7 @@ func ParseContent(content string, dataHeader string) map[string]string {
 		} else {
 			// Line is not an header
 
-			if currentHeader == "data" || currentHeader == dataHeader {
+			if currentHeader == "data" || currentHeader == dataSectionName {
 				// Processing a line inside of the "data" header
 				defParts := definitionRegex.FindStringSubmatch(line)
 				if len(defParts) == 2 {
