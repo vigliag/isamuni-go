@@ -1,4 +1,4 @@
-package db
+package model
 
 import (
 	"database/sql/driver"
@@ -167,4 +167,9 @@ func (p PageType) CatName() string {
 		return "wiki"
 	}
 	return ""
+}
+
+func AllPages() ([]Page, error) {
+	var pages []Page
+	return pages, Db.Find(&pages).Error
 }

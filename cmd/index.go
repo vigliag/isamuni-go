@@ -16,11 +16,12 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vigliag/isamuni-go/db"
 	"github.com/vigliag/isamuni-go/index"
+	"github.com/vigliag/isamuni-go/model"
 )
 
 // indexCmd represents the index command
@@ -41,10 +42,12 @@ func indexCommandRun(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	db.Connect("data/database.db")
+	model.Connect("data/database.db")
 
-	var pages []db.Page
-	db.Db.Find(&pages)
+	pages, err := model.AllPages()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// index some data
 	count := 0

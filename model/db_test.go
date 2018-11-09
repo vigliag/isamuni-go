@@ -1,4 +1,4 @@
-package db
+package model
 
 import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"

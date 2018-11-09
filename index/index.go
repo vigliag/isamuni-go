@@ -11,7 +11,7 @@ import (
 	"github.com/blevesearch/bleve/mapping"
 	_ "github.com/blevesearch/bleve/search/highlight/format/ansi"
 	_ "github.com/blevesearch/bleve/search/highlight/format/html"
-	"github.com/vigliag/isamuni-go/db"
+	"github.com/vigliag/isamuni-go/model"
 )
 
 type doc struct {
@@ -27,7 +27,7 @@ func (doc) BleveType() string {
 
 var headersRegex = regexp.MustCompile(`(?m)^#+.+$`)
 
-func pageToDoc(p *db.Page) doc {
+func pageToDoc(p *model.Page) doc {
 	var d doc
 	d.Content = headersRegex.ReplaceAllString(p.Content, "")
 	d.Type = p.Type.CatName()
@@ -85,7 +85,7 @@ func New(fname string) (*Index, error) {
 }
 
 // IndexPage puts a page in the index
-func (i Index) IndexPage(page db.Page) error {
+func (i Index) IndexPage(page model.Page) error {
 	d := pageToDoc(&page)
 	return i.idx.Index(fmt.Sprintf("%d", page.ID), d)
 }

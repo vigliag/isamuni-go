@@ -6,9 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/vigliag/isamuni-go/db"
-
 	"github.com/gosimple/slug"
+	"github.com/vigliag/isamuni-go/model"
 
 	_ "github.com/lib/pq"
 )
@@ -70,10 +69,10 @@ func copyUsers(isamunidb *sql.DB) {
 			userTags = oldtags.String
 		}
 
-		p := db.Page{
+		p := model.Page{
 			Title: name.String,
 			Short: occupation.String,
-			Type:  db.PageUser,
+			Type:  model.PageUser,
 			Slug:  slug.Make(name.String),
 		}
 		var b strings.Builder
@@ -96,7 +95,7 @@ func copyUsers(isamunidb *sql.DB) {
 		}
 		p.Content = b.String()
 
-		res := db.Db.Save(&p)
+		res := model.Db.Save(&p)
 		if res.Error != nil {
 			panic(res.Error)
 		}
@@ -138,7 +137,7 @@ func copyPages(isamunidb *sql.DB) {
 		}
 		linksString = strings.Join(linksLines, "\n")
 
-		p := db.Page{
+		p := model.Page{
 			Title:   name,
 			Short:   sector.String,
 			Slug:    slug.Make(name),
@@ -149,7 +148,7 @@ func copyPages(isamunidb *sql.DB) {
 			City:    province.String,
 		}
 
-		res := db.Db.Save(&p)
+		res := model.Db.Save(&p)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
@@ -174,18 +173,18 @@ func main() {
 		panic(err)
 	}
 
-	db.Connect("data/database.db")
+	model.Connect("data/database.db")
 
 	copyUsers(isamunidb)
 	copyPages(isamunidb)
 }
 
-func kindToPageType(kind int) db.PageType {
+func kindToPageType(kind int) model.PageType {
 	switch kind {
 	case 1:
-		return db.PageCommunity
+		return model.PageCommunity
 	case 0:
-		return db.PageCompany
+		return model.PageCompany
 	}
 	return 0
 }

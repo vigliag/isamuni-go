@@ -8,10 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vigliag/isamuni-go/db"
-
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
+	"github.com/vigliag/isamuni-go/model"
 )
 
 func panicIfNotNull(e error) {
@@ -31,16 +30,16 @@ func assertHTMLReturned(t *testing.T, res *http.Response) {
 	assert.Equal(t, "text/html; charset=utf-8", strings.ToLower(res.Header.Get("content-type")))
 }
 
-func registerTestAdmin() *db.User {
-	u, err := db.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
+func registerTestAdmin() *model.User {
+	u, err := model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
 	if err != nil {
 		panic(err)
 	}
 	return u
 }
 
-func registerTestUser() *db.User {
-	u, err := db.RegisterEmail("otheruser", "other@example.com", "password", "")
+func registerTestUser() *model.User {
+	u, err := model.RegisterEmail("otheruser", "other@example.com", "password", "")
 	if err != nil {
 		panic(err)
 	}
@@ -48,16 +47,16 @@ func registerTestUser() *db.User {
 }
 
 func TestShowPageHandler(t *testing.T) {
-	db.ConnectTestDB()
+	model.ConnectTestDB()
 
 	r := CreateServer(echo.New())
 
-	p := db.Page{
+	p := model.Page{
 		Content: "Ciao",
-		Type:    db.PageCompany,
+		Type:    model.PageCompany,
 		Title:   "Example company",
 	}
-	db.Db.Save(&p)
+	model.Db.Save(&p)
 	assert.NotZero(t, p.ID)
 
 	client := NewTestClient(r)
@@ -69,8 +68,8 @@ func TestShowPageHandler(t *testing.T) {
 }
 
 func TestMeHandler(t *testing.T) {
-	db.ConnectTestDB()
-	defer db.Close()
+	model.ConnectTestDB()
+	defer model.Close()
 
 	u := registerTestAdmin()
 
@@ -91,8 +90,8 @@ func TestMeHandler(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	db.ConnectTestDB()
-	defer db.Db.Close()
+	model.ConnectTestDB()
+	defer model.Db.Close()
 
 	u := registerTestAdmin()
 
@@ -111,8 +110,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestInsertPage(t *testing.T) {
-	db.ConnectTestDB()
-	defer db.Db.Close()
+	model.ConnectTestDB()
+	defer model.Db.Close()
 
 	u := registerTestAdmin()
 
@@ -122,7 +121,7 @@ func TestInsertPage(t *testing.T) {
 
 	form := url.Values{}
 	form.Set("title", "Example company")
-	form.Set("type", fmt.Sprintf("%d", int(db.PageCompany)))
+	form.Set("type", fmt.Sprintf("%d", int(model.PageCompany)))
 	form.Set("content", "Example contents")
 
 	req := formRequest("/pages", form)
@@ -139,19 +138,19 @@ func TestInsertPage(t *testing.T) {
 }
 
 func TestEditPage(t *testing.T) {
-	db.ConnectTestDB()
-	defer db.Close()
+	model.ConnectTestDB()
+	defer model.Close()
 
 	u := registerTestAdmin()
 	u2 := registerTestUser()
 
-	p := &db.Page{
+	p := &model.Page{
 		Content: "Ciao",
-		Type:    db.PageCompany,
+		Type:    model.PageCompany,
 		Title:   "Example company",
 	}
 
-	err := db.SavePage(p, u)
+	err := model.SavePage(p, u)
 	assert.NoError(t, err)
 
 	r := CreateServer(echo.New())
