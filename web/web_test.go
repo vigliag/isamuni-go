@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"fmt"
@@ -50,7 +50,7 @@ func registerTestUser() *db.User {
 func TestShowPageHandler(t *testing.T) {
 	db.ConnectTestDB()
 
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 
 	p := db.Page{
 		Content: "Ciao",
@@ -74,7 +74,7 @@ func TestMeHandler(t *testing.T) {
 
 	u := registerTestAdmin()
 
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 
 	// Before login
 	client := NewTestClient(r)
@@ -96,7 +96,7 @@ func TestLogin(t *testing.T) {
 
 	u := registerTestAdmin()
 
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 	client := NewTestClient(r)
 
 	res := client.Login(u.Email, "password")
@@ -116,7 +116,7 @@ func TestInsertPage(t *testing.T) {
 
 	u := registerTestAdmin()
 
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 	client := NewTestClient(r)
 	client.MustLogin(u.Email, "password")
 
@@ -154,7 +154,7 @@ func TestEditPage(t *testing.T) {
 	err := db.SavePage(p, u)
 	assert.NoError(t, err)
 
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 
 	// Test with admin
 	client := NewTestClient(r)
@@ -170,7 +170,7 @@ func TestEditPage(t *testing.T) {
 }
 
 func TestUserPages(t *testing.T) {
-	r := createServer(echo.New())
+	r := CreateServer(echo.New())
 	client := NewTestClient(r)
 
 	assertHTMLReturned(t, client.Get("/login"))

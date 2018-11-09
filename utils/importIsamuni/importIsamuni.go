@@ -174,7 +174,7 @@ func main() {
 		panic(err)
 	}
 
-	db.Connect()
+	db.Connect("data/database.db")
 
 	copyUsers(isamunidb)
 	copyPages(isamunidb)

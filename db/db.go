@@ -10,9 +10,9 @@ var (
 	Db *gorm.DB
 )
 
-func Connect() *gorm.DB {
+func Connect(dbPath string) *gorm.DB {
 	var err error
-	Db, err = gorm.Open("sqlite3", "database.db")
+	Db, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {
 		panic(err)
 	}

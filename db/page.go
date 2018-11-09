@@ -6,7 +6,6 @@ import (
 	"github.com/gosimple/slug"
 
 	"github.com/jinzhu/gorm"
-	"github.com/vigliag/isamuni-go/contentparser"
 )
 
 //PageType tells if a Page is for a User, a Company or a Community
@@ -70,26 +69,8 @@ func (p *Page) assignDataItem(name, content string) {
 
 }
 
-func normalizeHeaders(sections map[string]string) map[string]string {
-	//TODO load dict from file
-	dict := map[string]string{
-		"sito web": "website",
-		"in breve": "short",
-		"città":    "area",
-	}
-	result := make(map[string]string)
-	for k, v := range sections {
-		if newkey, ok := dict[k]; ok {
-			result[newkey] = v
-		} else {
-			result[k] = v
-		}
-	}
-	return result
-}
-
 func (p *Page) SetFieldsToParsedContent() {
-	parsed := normalizeHeaders(contentparser.ParseContent(p.Content, "dati"))
+	parsed := normalizeHeaders(parseContent(p.Content, "dati"))
 
 	p.Short = parsed["short"]
 	p.City = parsed["city"]
