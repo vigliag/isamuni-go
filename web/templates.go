@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/microcosm-cc/bluemonday"
@@ -61,8 +62,9 @@ func loadTemplates() *Template {
 	return &Template{templates: t}
 }
 
-//renderMarkdown renders markdown to safe HTML for use in a template
+//RenderMarkdown renders markdown to safe HTML for use in a template
 func RenderMarkdown(m string) template.HTML {
+	m = strings.Replace(m, "\r\n", "\n", -1)
 	unsafe := blackfriday.Run([]byte(m), blackfriday.WithExtensions(blackfriday.Autolink))
 	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 	return template.HTML(html)

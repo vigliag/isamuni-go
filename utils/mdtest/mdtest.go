@@ -1,17 +1,16 @@
 package main
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/vigliag/isamuni-go/model"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
+	"github.com/vigliag/isamuni-go/web"
 )
 
 func main() {
 	model.Connect("data/database.db")
-	p := model.FindPage(62, model.PageUser)
-	fmt.Println(p.Content)
-
-	unsafe := blackfriday.Run([]byte(p.Content))
-	fmt.Println(string(unsafe))
+	p := model.FindPage(71, model.PageUser)
+	content := p.Content
+	//content = strings.Replace(content, "\r\n", "\n", -1)
+	os.Stdout.WriteString(string(web.RenderMarkdown(content)))
 }
