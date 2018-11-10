@@ -152,7 +152,7 @@ func copyPages(isamunidb *sql.DB) {
 		}
 		linksString = strings.Join(linksLines, "\n")
 
-		content := description.String + "\n### Links\n" + linksString
+		content := description.String + "\n\n### Links\n\n" + linksString
 		content = strings.Replace(content, "\r\n", "\n", -1)
 
 		p := model.Page{

@@ -3,8 +3,9 @@ package web
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
+
+	"github.com/spf13/viper"
 
 	rice "github.com/GeertJohan/go.rice"
 	"github.com/gorilla/securecookie"
@@ -19,7 +20,7 @@ import (
 /////////////
 
 func getSessionKey() []byte {
-	sessKey := os.Getenv("SESSION_KEY")
+	sessKey := viper.GetString("SESSION_KEY")
 	if sessKey == "" {
 		fmt.Println("SESSION_KEY not set, generating new session key")
 		return securecookie.GenerateRandomKey(32)

@@ -15,21 +15,23 @@
 {{ end }}
 
 <form action="{{ or .action "/pages" }}" method="post">
-    <label for="title">Name
-        <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
-    </label>
+    <label for="title">Name</label>
+    <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
     {{ if eq .currentUser.Role "admin" }}
-    <label for="slug">Slug (empty to autogenerate)
+    <label for="slug">Slug (empty to autogenerate)</label>
         <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">
-    </label>
     {{ end }}
-    <label for="content">Content
-        <textarea name="content" id="content" placeholder="Content">{{ .shownContent }}</textarea>
-    </label>
+    <label for="content">Content</label>
+    <textarea name="content" id="content" placeholder="Content">{{ .shownContent }}</textarea>
     <input type="hidden" name="type" value="{{.page.Type.Int}}">
     <input type="Submit" value="Save {{ if eq .currentUser.Role "admin" }} and approve{{ end }}">
     
     <p>Your version will be saved to the database. You can re-edit it by editing the page. It will be visible to all users after admin approval</p>
 </form>
 </div>
+<link rel="stylesheet" href="/static/simplemde.min.css">
+<script src="/static/simplemde.min.js"></script>
+<script>
+    var simplemde = new SimpleMDE();
+</script>
 {{ template "__footer.html"}}
