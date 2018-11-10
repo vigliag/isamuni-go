@@ -47,8 +47,8 @@ func serveRun(cmd *cobra.Command, args []string) {
 
 	//r.Use(middleware.Recover())
 
-	model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
-	model.RegisterEmail("testuser", "testuser@example.com", "password", "user")
+	//model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
+	//model.RegisterEmail("testuser", "testuser@example.com", "password", "user")
 
 	listenURL := cmd.Flag("listenURL").Value.String()
 	fmt.Println("Server started on " + listenURL)

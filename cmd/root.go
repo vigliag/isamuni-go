@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -52,7 +51,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.isamuni.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "./isamuni.yaml", "config file (default is ./isamuni.yaml)")
 	rootCmd.PersistentFlags().String("dataPath", "./data", "path where isamuni will store its data")
 	viper.BindPFlag("dataPath", rootCmd.Flags().Lookup("dataPath"))
 }
@@ -62,17 +61,6 @@ func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".isamuni" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".isamuni")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

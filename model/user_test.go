@@ -31,16 +31,16 @@ func TestDB_Login(t *testing.T) {
 
 	u1 := registerTestAdmin()
 
-	u2 := LoginEmail(u1.Email, "password")
+	u2 := LoginEmail(*u1.Email, "password")
 	assert.Equal(t, u1.ID, u2.ID)
 
 	u3 := LoginEmail("nonexistent", "password")
 	assert.Nil(t, u3)
 
-	u4 := LoginEmail(u1.Email, "wrongpassword")
+	u4 := LoginEmail(*u1.Email, "wrongpassword")
 	assert.Nil(t, u4)
 
-	u5, err := RegisterEmail(u1.Username, u1.Email, "password", "user")
+	u5, err := RegisterEmail(u1.Username, *u1.Email, "password", "user")
 	assert.Error(t, err)
 	assert.Nil(t, u5)
 }

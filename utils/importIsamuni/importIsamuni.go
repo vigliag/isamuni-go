@@ -46,7 +46,7 @@ func getTags(isamunidb *sql.DB) map[int]string {
 func copyUsers(isamunidb *sql.DB) {
 	tags := getTags(isamunidb)
 
-	rows, err := isamunidb.Query("select id, name, occupation, description, projects, links, tags from users where public_profile= true;")
+	rows, err := isamunidb.Query("select id, name, occupation, description, projects, links, tags, uid from users where public_profile= true;")
 	if err != nil {
 		panic(err)
 	}
@@ -59,8 +59,9 @@ func copyUsers(isamunidb *sql.DB) {
 			projects    sql.NullString
 			links       sql.NullString
 			oldtags     sql.NullString
+			fbid        sql.NullString
 		)
-		if err := rows.Scan(&id, &name, &occupation, &description, &projects, &links, &oldtags); err != nil {
+		if err := rows.Scan(&id, &name, &occupation, &description, &projects, &links, &oldtags, &fbid); err != nil {
 			log.Fatal(err)
 		}
 
@@ -69,37 +70,51 @@ func copyUsers(isamunidb *sql.DB) {
 			userTags = oldtags.String
 		}
 
+		u := model.User{
+			FacebookID: &fbid.String,
+			Username:   name.String,
+		}
+		err := model.Db.Save(&u).Error
+
 		p := model.Page{
-			Title: name.String,
-			Short: occupation.String,
-			Type:  model.PageUser,
-			Slug:  slug.Make(name.String),
+			Title:   name.String,
+			Short:   occupation.String,
+			Type:    model.PageUser,
+			Slug:    slug.Make(name.String),
+			OwnerID: u.ID,
 		}
 		var b strings.Builder
-
-		s := strings.TrimSpace(description.String)
-		b.WriteString("### Description\n")
-		b.WriteString(s)
-
+		if s := strings.TrimSpace(occupation.String); s != "" {
+			b.WriteString("### In breve\n\n")
+			b.WriteString(s)
+		}
+		if s := strings.TrimSpace(description.String); s != "" {
+			b.WriteString("\n\n### Descrizione\n\n")
+			b.WriteString(s)
+		}
 		if s := strings.TrimSpace(projects.String); s != "" {
-			b.WriteString("\n\n### Projects\n")
+			b.WriteString("\n\n### Progetti\n\n")
 			b.WriteString(s)
 		}
 		if s := strings.TrimSpace(links.String); s != "" {
-			b.WriteString("\n\n### Links\n")
+			b.WriteString("\n\n### Links\n\n")
 			b.WriteString(s)
 		}
 		if s := strings.TrimSpace(userTags); s != "" {
-			b.WriteString("\n\n### Tags\n")
+			b.WriteString("\n\n### Tags\n\n")
 			b.WriteString(s)
 		}
-		p.Content = b.String()
+		p.Content = strings.Replace(b.String(), "\r\n", "\n", -1)
 
 		res := model.Db.Save(&p)
 		if res.Error != nil {
 			panic(res.Error)
 		}
 		fmt.Printf("user %s: %s\n%s\n\n", p.Title, p.Short, p.Content)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -137,11 +152,14 @@ func copyPages(isamunidb *sql.DB) {
 		}
 		linksString = strings.Join(linksLines, "\n")
 
+		content := description.String + "\n### Links\n" + linksString
+		content = strings.Replace(content, "\r\n", "\n", -1)
+
 		p := model.Page{
 			Title:   name,
 			Short:   sector.String,
 			Slug:    slug.Make(name),
-			Content: description.String + "\n### Links\n" + linksString,
+			Content: content,
 			Sector:  sector.String,
 			Website: website.String,
 			Type:    kindToPageType(kind),

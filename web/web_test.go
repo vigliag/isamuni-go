@@ -84,7 +84,7 @@ func TestMeHandler(t *testing.T) {
 	assert.Equal(t, "/login", redirectURL.Path)
 
 	// After login
-	client.MustLogin(u.Email, "password")
+	client.MustLogin(*u.Email, "password")
 	res = client.Get("/me")
 	assert.Equal(t, 200, res.StatusCode)
 }
@@ -98,14 +98,14 @@ func TestLogin(t *testing.T) {
 	r := CreateServer(echo.New())
 	client := NewTestClient(r)
 
-	res := client.Login(u.Email, "password")
+	res := client.Login(*u.Email, "password")
 	if res.StatusCode >= 400 {
 		assert.Fail(t, "Login returned error status code")
 	}
 	assert.NotEmpty(t, res.Cookies)
 
 	client = NewTestClient(r)
-	res = client.Login(u.Email, "wrongPassword")
+	res = client.Login(*u.Email, "wrongPassword")
 	assert.Equal(t, 404, res.StatusCode)
 }
 
@@ -117,7 +117,7 @@ func TestInsertPage(t *testing.T) {
 
 	r := CreateServer(echo.New())
 	client := NewTestClient(r)
-	client.MustLogin(u.Email, "password")
+	client.MustLogin(*u.Email, "password")
 
 	form := url.Values{}
 	form.Set("title", "Example company")
@@ -157,13 +157,13 @@ func TestEditPage(t *testing.T) {
 
 	// Test with admin
 	client := NewTestClient(r)
-	client.MustLogin(u.Email, "password")
+	client.MustLogin(*u.Email, "password")
 	res := client.Get(fmt.Sprintf("/companies/%d/edit", p.ID))
 	assertHTMLReturned(t, res)
 
 	// Test with non-admin
 	client2 := NewTestClient(r)
-	client2.MustLogin(u2.Email, "password")
+	client2.MustLogin(*u2.Email, "password")
 	res = client2.Get(fmt.Sprintf("/companies/%d/edit", p.ID))
 	assertHTMLReturned(t, res)
 }

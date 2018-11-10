@@ -12,6 +12,22 @@ import (
 	"github.com/vigliag/isamuni-go/model"
 )
 
+// PageURL returns the url for a give page
+func PageURL(p *model.Page) string {
+	typeStr := "page"
+	switch p.Type {
+	case model.PageUser:
+		typeStr = "professionals"
+	case model.PageCommunity:
+		typeStr = "communities"
+	case model.PageCompany:
+		typeStr = "companies"
+	case model.PageWiki:
+		typeStr = "wiki"
+	}
+	return fmt.Sprintf("/%s/%d", typeStr, p.ID)
+}
+
 func indexPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var pages []model.Page
@@ -68,16 +84,20 @@ func mePageH(c echo.Context) error {
 
 	page := model.UserPage(u)
 	if page == nil {
+		fmt.Printf("User page not found")
 		page = &model.Page{
 			Title: u.Username,
 		}
 	}
 
+	// generate an url to edit the page, if the page does not exists
 	action := "/pages"
 	if page.ID != 0 {
-		fmt.Sprintf("/pages/%d", page.ID)
+		action = fmt.Sprintf("/pages/%d", page.ID)
 	}
-	return c.Render(200, "pageEdit.html", H{"page": page, "action": action})
+	shownContent := page.Content
+	shownVersion := "Current"
+	return c.Render(200, "pageEdit.html", H{"page": page, "action": action, "shownContent": shownContent, "shownVersion": shownVersion})
 }
 
 // shows edit form for a page

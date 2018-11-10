@@ -6,6 +6,8 @@ import (
 	"log"
 
 	"github.com/GeertJohan/go.rice"
+	"github.com/microcosm-cc/bluemonday"
+	blackfriday "gopkg.in/russross/blackfriday.v2"
 
 	"github.com/labstack/echo"
 )
@@ -57,4 +59,11 @@ func loadTemplates() *Template {
 	loadTemplateFromBox(templateBox, t, "pageShow.html")
 
 	return &Template{templates: t}
+}
+
+//renderMarkdown renders markdown to safe HTML for use in a template
+func RenderMarkdown(m string) template.HTML {
+	unsafe := blackfriday.Run([]byte(m), blackfriday.WithExtensions(blackfriday.Autolink))
+	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+	return template.HTML(html)
 }

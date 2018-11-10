@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,20 +12,11 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/middleware"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/vigliag/isamuni-go/model"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
 // Helpers
 /////////////
-
-//RenderMarkdown renders markdown to safe HTML for use in a template
-func RenderMarkdown(m string) template.HTML {
-	unsafe := blackfriday.Run([]byte(m))
-	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
-	return template.HTML(html)
-}
 
 func getSessionKey() []byte {
 	sessKey := os.Getenv("SESSION_KEY")
@@ -37,9 +27,18 @@ func getSessionKey() []byte {
 	return []byte(sessKey)
 }
 
-func loginPage(c echo.Context) error {
-	redirParam := c.QueryParam("redir")
-	c.Render(200, "login.html", H{"redir": redirParam})
+func intParameter(c echo.Context, param string) int {
+	id, err := strconv.Atoi(c.Param(param))
+	if err != nil {
+		return 0
+	}
+	return id
+}
+
+func currentUser(c echo.Context) *model.User {
+	if u, ok := c.Get("currentUser").(*model.User); ok {
+		return u
+	}
 	return nil
 }
 
@@ -50,42 +49,7 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 	}
 }
 
-func PageURL(p *model.Page) string {
-	return fmt.Sprintf("/%s/%d", p.Type.CatName(), p.ID)
-}
-
-func intParameter(c echo.Context, param string) int {
-	id, err := strconv.Atoi(c.Param(param))
-	if err != nil {
-		return 0
-	}
-	return id
-}
-
-// Middlewares
-//////////////////
-
-func setCurrentUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		sess, err := session.Get("session", c)
-		if err == nil && sess.Values["userid"] != nil && sess.Values["email"] != nil {
-			user := model.RetrieveUser(sess.Values["userid"].(uint), sess.Values["email"].(string))
-			c.Set("currentUser", user)
-		}
-		return next(c)
-	}
-}
-
-func currentUser(c echo.Context) *model.User {
-	if u, ok := c.Get("currentUser").(*model.User); ok {
-		return u
-	}
-	return nil
-}
-
-// Startup
-///////////////
-
+// CreateServer attaches the app's routes and middlewares to an Echo server
 func CreateServer(r *echo.Echo) *echo.Echo {
 	t := loadTemplates()
 	r.Renderer = t
@@ -119,6 +83,9 @@ func CreateServer(r *echo.Echo) *echo.Echo {
 	r.GET("/logout", loginPage)
 	r.POST("/login", loginWithEmail)
 	r.POST("/logout", logout)
+
+	r.GET("/login/facebook", redirectToFacebookLogin)
+	r.GET("/oauth/fb", completeFacebookLogin)
 
 	r.GET("/professionals/:id", showPageH(model.PageUser))
 	r.GET("/wiki/:id", showPageH(model.PageWiki))

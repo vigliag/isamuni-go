@@ -3,3 +3,5 @@ database.db
 index.bleve
 isamuni-go
 data
+isamuni.yaml
+.vscode

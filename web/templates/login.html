@@ -5,7 +5,11 @@
         <input type="submit" value="Logout">
     </form>
 {{ else }}
-    <h3>Login</h3>
+    <h3>Login with Facebook</h3>
+    <p>
+        <a href="/login/facebook">Click here to login with facebook</a>
+    </p>
+    <h3>Login with email</h3>
     <form action="/login" method="post">
     <label for="email">Email
     <input type="text" name="email" id="email"><br>
