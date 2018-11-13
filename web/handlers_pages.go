@@ -14,8 +14,13 @@ import (
 
 // PageURL returns the url for a give page
 func PageURL(p *model.Page) string {
+	typeStr := CatUrl(p.Type)
+	return fmt.Sprintf("/%s/%d", typeStr, p.ID)
+}
+
+func CatUrl(ptype model.PageType) string {
 	typeStr := "page"
-	switch p.Type {
+	switch ptype {
 	case model.PageUser:
 		typeStr = "professionals"
 	case model.PageCommunity:
@@ -25,7 +30,22 @@ func PageURL(p *model.Page) string {
 	case model.PageWiki:
 		typeStr = "wiki"
 	}
-	return fmt.Sprintf("/%s/%d", typeStr, p.ID)
+	return typeStr
+}
+
+func CatName(ptype model.PageType) string {
+	name := "page"
+	switch ptype {
+	case model.PageUser:
+		name = "professionisti"
+	case model.PageCommunity:
+		name = "community"
+	case model.PageCompany:
+		name = "aziende"
+	case model.PageWiki:
+		name = "wiki"
+	}
+	return name
 }
 
 func indexPageH(ptype model.PageType) echo.HandlerFunc {
@@ -35,9 +55,8 @@ func indexPageH(ptype model.PageType) echo.HandlerFunc {
 		if err := res.Error; err != nil {
 			return err
 		}
-		cat := ptype.CatName()
-		title := strings.Title(cat)
-		return c.Render(200, "pageIndex.html", H{"pages": pages, "title": title, "cat": cat})
+		title := strings.Title(CatName(ptype))
+		return c.Render(200, "pageIndex.html", H{"pages": pages, "title": title, "cat": ptype})
 	}
 }
 

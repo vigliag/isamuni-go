@@ -56,6 +56,8 @@ func loadTemplates() *Template {
 			return template.HTML(bluemonday.UGCPolicy().Sanitize(text))
 		},
 		"pageurl": PageURL,
+		"caturl":  CatUrl,
+		"catname": CatName,
 	})
 	loadTemplateFromBox(templateBox, t, "__footer.html")
 	loadTemplateFromBox(templateBox, t, "__header.html")

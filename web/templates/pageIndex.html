@@ -1,12 +1,12 @@
 {{ template "__header.html" . }}
-<h2>Index of {{.cat}}</h2>
+<h2>Indice {{catname .cat}}</h2>
 
 <table>
     <thead>
         <tr>
         <th>Name</th>
         <th>Description</th>
-        {{ if eq .cat "companies" "communities" }}
+        {{ if eq .cat.CatName "companies" "communities" }}
             <th>Area</th>
         {{ end }}
         </tr>
@@ -14,9 +14,9 @@
     <tbody>
         {{ range .pages }}
             <tr>
-                <td><a href="/{{$.cat}}/{{.ID}}">{{ .Title }}</a></td>
+                <td><a href="{{ pageurl . }}">{{ .Title }}</a></td>
                 <td>{{.Short}}</td>
-                {{ if eq $.cat "companies" "communities" }}
+                {{ if eq $.cat.CatName "companies" "communities" }}
                     <td>{{.City}}</td>
                 {{ end }}
             </tr>
@@ -26,6 +26,6 @@
 
 
 {{ if .currentUser }}
-    <p class="float-right"><a href="/{{.cat}}/new">New page</a></p>
+    <p class="float-right"><a href="{{caturl .cat}}/new">New page</a></p>
 {{ end }}
 {{ template "__footer.html" }}

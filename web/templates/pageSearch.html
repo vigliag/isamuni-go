@@ -1,6 +1,6 @@
 {{ template "__header.html" . }}
 
-<h2>Search</h2>
+<h2>Ricerca</h2>
 
 <form action="/search">
     <input type="search" name="query" value="{{.query}}"></input>
@@ -8,14 +8,14 @@
 </form>
 
 {{ if or .professionals .companies .communities false }}
-    <h2>Search results:</h2>
+    <h2>Risultati ricerca:</h2>
 {{ else }}
-    <h2>No results</h2>
+    <h2>Nessun risultato</h2>
 {{ end }}
 
 
 {{ if .communities }}
-    <h3>Communities</h3>
+    <h3>Community</h3>
     <ul>
     {{ range .communities }}
         <li>
@@ -38,7 +38,7 @@
 
 
 {{ if .companies }}
-    <h3>Companies</h3>
+    <h3>Aziende</h3>
     <ul>
     {{ range .companies }}
         <li>
@@ -60,7 +60,7 @@
 {{ end }}
 
 {{ if .professionals }}
-    <h3>Professionals</h3>
+    <h3>Professionisti</h3>
     <ul>
     {{ range .professionals }}
         <li>
