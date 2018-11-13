@@ -1,0 +1,84 @@
+{{ template "__header.html" . }}
+
+<h2>Search</h2>
+
+<form action="/search">
+    <input type="search" name="query" value="{{.query}}"></input>
+    <input type="submit">
+</form>
+
+{{ if or .professionals .companies .communities false }}
+    <h2>Search results:</h2>
+{{ else }}
+    <h2>No results</h2>
+{{ end }}
+
+
+{{ if .communities }}
+    <h3>Communities</h3>
+    <ul>
+    {{ range .communities }}
+        <li>
+        <a href="{{ pageurl .Page }}">{{ .Page.Title }}</a> 
+        {{ if .Fragments }}
+        <ul>
+        {{ range $key, $fragments := .Fragments }}
+            <li><strong>{{ $key }}</strong>:
+                {{ range $fragments }}
+                    <span>{{ (sanitize .) }}</span>
+                {{ end }}
+            </li>
+        {{ end }}
+        </ul>
+        {{ end }}
+        </li>
+    {{ end }}
+    </ul>
+{{ end }}
+
+
+{{ if .companies }}
+    <h3>Companies</h3>
+    <ul>
+    {{ range .companies }}
+        <li>
+        <a href="{{ pageurl .Page }}">{{ .Page.Title }}</a> 
+        {{ if .Fragments }}
+        <ul>
+        {{ range $key, $fragments := .Fragments }}
+            <li><strong>{{ $key }}</strong>:
+                {{ range $fragments }}
+                    <span>{{ (sanitize .) }}</span>
+                {{ end }}
+            </li>
+        {{ end }}
+        </ul>
+        {{ end }}
+        </li>
+    {{ end }}
+    </ul>
+{{ end }}
+
+{{ if .professionals }}
+    <h3>Professionals</h3>
+    <ul>
+    {{ range .professionals }}
+        <li>
+        <a href="{{ pageurl .Page }}">{{ .Page.Title }}</a> 
+        {{ if .Fragments }}
+        <ul>
+        {{ range $key, $fragments := .Fragments }}
+            <li><strong>{{ $key }}</strong>:
+                {{ range $fragments }}
+                    <span>{{ (sanitize .) }}</span>
+                {{ end }}
+            </li>
+        {{ end }}
+        </ul>
+        {{ end }}
+        </li>
+    {{ end }}
+    </ul>
+{{ end }}
+
+{{ template "__footer.html" }}

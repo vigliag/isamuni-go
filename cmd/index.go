@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -29,13 +30,34 @@ var indexCmd = &cobra.Command{
 	Use:   "index",
 	Short: "A brief description of your command",
 	Long:  `A longer description`,
-	Run:   indexCommandRun,
+	Run:   indexRun,
 }
 
-func indexCommandRun(cmd *cobra.Command, args []string) {
+var printindexCmd = &cobra.Command{
+	Use:   "printindex",
+	Short: "prints the indexed documents",
+	Run:   printIndexRun,
+}
+
+func printIndexRun(cmd *cobra.Command, args []string) {
+	model.Connect("data/database.db")
+
+	pages, err := model.AllPages()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, p := range pages {
+		pDoc := index.PageToDoc(p)
+		pDocJson, _ := json.Marshal(pDoc)
+		fmt.Println(string(pDocJson))
+	}
+}
+
+func indexRun(cmd *cobra.Command, args []string) {
 
 	// open a new index
-	fname := "index.bleve"
+	fname := "data/index.bleve"
 	os.RemoveAll(fname)
 	idx, err := index.New(fname)
 	if err != nil {
@@ -62,21 +84,21 @@ func indexCommandRun(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("indexed %v documents \n", count)
 
-	if len(os.Args) < 2 {
+	if len(args) < 1 {
 		return
 	}
-	querystring := os.Args[1]
+	querystring := args[0]
 
-	searchResults, err := idx.SearchPageByQueryString(querystring)
-
-	if err != nil {
-		panic(err)
+	searchResults, err := idx.SearchPagesByQueryString(querystring)
+	for _, result := range searchResults {
+		fmt.Println(result.Page.Title, result.Page.Type.CatName(), result.Fragments)
 	}
-	fmt.Println(searchResults)
+
 }
 
 func init() {
 	rootCmd.AddCommand(indexCmd)
+	rootCmd.AddCommand(printindexCmd)
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

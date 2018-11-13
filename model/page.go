@@ -70,7 +70,7 @@ func (p *Page) assignDataItem(name, content string) {
 }
 
 func (p *Page) SetFieldsToParsedContent() {
-	parsed := normalizeHeaders(parseContent(p.Content, "dati"))
+	parsed := normalizeHeaders(ParseContent(p.Content))
 
 	p.Short = parsed["short"]
 	p.City = parsed["city"]
@@ -169,7 +169,40 @@ func (p PageType) CatName() string {
 	return ""
 }
 
-func AllPages() ([]Page, error) {
-	var pages []Page
+func AllPages() ([]*Page, error) {
+	var pages []*Page
 	return pages, Db.Find(&pages).Error
+}
+
+type SiteStats struct {
+	NCompanies     int
+	NCommunities   int
+	NProfessionals int
+	NWiki          int
+}
+
+func GetSiteStats() (SiteStats, error) {
+	var stats SiteStats
+	rows, err := Db.Table("pages").Select("type, count(*)").Group("type").Rows()
+	if err != nil {
+		return stats, err
+	}
+	for rows.Next() {
+		var kind int
+		var count int
+		if err := rows.Scan(&kind, &count); err != nil {
+			return stats, err
+		}
+		switch PageType(kind) {
+		case PageCommunity:
+			stats.NCommunities = count
+		case PageCompany:
+			stats.NCompanies = count
+		case PageUser:
+			stats.NProfessionals = count
+		case PageWiki:
+			stats.NWiki = count
+		}
+	}
+	return stats, nil
 }

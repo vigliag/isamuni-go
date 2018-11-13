@@ -175,3 +175,13 @@ func TestUserPages(t *testing.T) {
 	assertHTMLReturned(t, client.Get("/login"))
 	//assertHTMLReturned(t, client.Get("/companies/new"))
 }
+
+func TestSearch(t *testing.T) {
+	model.ConnectTestDB()
+	defer model.Close()
+
+	r := CreateServer(echo.New())
+	client := NewTestClient(r)
+	assertHTMLReturned(t, client.Get("/search"))
+	assertHTMLReturned(t, client.Get("/search?query=promuove"))
+}

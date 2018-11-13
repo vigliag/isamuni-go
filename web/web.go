@@ -78,7 +78,7 @@ func CreateServer(r *echo.Echo) *echo.Echo {
 	staticFileServer := http.StripPrefix("/static/", http.FileServer(staticBox.HTTPBox()))
 	r.GET("/static/*", echo.WrapHandler(staticFileServer))
 
-	r.GET("/", serveTemplate("home"))
+	r.GET("/", homeH)
 
 	r.GET("/login", loginPage)
 	r.GET("/logout", loginPage)
@@ -109,6 +109,9 @@ func CreateServer(r *echo.Echo) *echo.Echo {
 	r.GET("/communities", indexPageH(model.PageCommunity))
 
 	r.GET("/me", mePageH)
+
+	r.GET("/search", searchH)
+	r.GET("/privacy", serveTemplate("privacy"))
 
 	r.POST("/pages", updatePageH)
 	r.POST("/pages/:id", updatePageH)

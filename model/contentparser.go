@@ -12,9 +12,10 @@ var definitionRegex *regexp.Regexp = regexp.MustCompile(`^\s*[-\*]?\s*(.+)$`)
 func normalizeHeaders(sections map[string]string) map[string]string {
 	//TODO load dict from file
 	dict := map[string]string{
-		"sito web": "website",
-		"in breve": "short",
-		"città":    "area",
+		"sito web":    "website",
+		"in breve":    "short",
+		"città":       "area",
+		"descrizione": "description",
 	}
 	result := make(map[string]string)
 	for k, v := range sections {
@@ -27,11 +28,20 @@ func normalizeHeaders(sections map[string]string) map[string]string {
 	return result
 }
 
+func isDataSection(headerName string) bool {
+	for _, h := range []string{"data", "dati", "informazioni"} {
+		if headerName == h {
+			return true
+		}
+	}
+	return false
+}
+
 // ParseContent parses some markdown-like content into its sections,
 // returning a map[sectionName]content.
 // If a section called "data" is met, its contents are interpreted "key:value"
 // pairs, and added to the returned map.
-func parseContent(content string, dataSectionName string) map[string]string {
+func ParseContent(content string) map[string]string {
 	scanner := bufio.NewScanner(strings.NewReader(content))
 
 	currentHeader := "short"
@@ -54,7 +64,7 @@ func parseContent(content string, dataSectionName string) map[string]string {
 		} else {
 			// Line is not an header
 
-			if currentHeader == "data" || currentHeader == dataSectionName {
+			if isDataSection(currentHeader) {
 				// Processing a line inside of the "data" header
 				defParts := definitionRegex.FindStringSubmatch(line)
 				if len(defParts) == 2 {
@@ -75,5 +85,5 @@ func parseContent(content string, dataSectionName string) map[string]string {
 	if currentContent.Len() > 0 {
 		dataMap[currentHeader] = strings.TrimSpace(currentContent.String())
 	}
-	return dataMap
+	return normalizeHeaders(dataMap)
 }

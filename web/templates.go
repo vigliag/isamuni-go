@@ -51,6 +51,12 @@ func loadTemplates() *Template {
 	}
 
 	t := template.New("main")
+	t.Funcs(template.FuncMap{
+		"sanitize": func(text string) template.HTML {
+			return template.HTML(bluemonday.UGCPolicy().Sanitize(text))
+		},
+		"pageurl": PageURL,
+	})
 	loadTemplateFromBox(templateBox, t, "__footer.html")
 	loadTemplateFromBox(templateBox, t, "__header.html")
 	loadTemplateFromBox(templateBox, t, "home.html")
@@ -58,6 +64,8 @@ func loadTemplates() *Template {
 	loadTemplateFromBox(templateBox, t, "pageEdit.html")
 	loadTemplateFromBox(templateBox, t, "pageIndex.html")
 	loadTemplateFromBox(templateBox, t, "pageShow.html")
+	loadTemplateFromBox(templateBox, t, "pageSearch.html")
+	loadTemplateFromBox(templateBox, t, "privacy.html")
 
 	return &Template{templates: t}
 }
