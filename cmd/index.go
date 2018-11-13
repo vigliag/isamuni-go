@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
+
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 	"github.com/vigliag/isamuni-go/index"
@@ -28,19 +31,19 @@ import (
 // indexCmd represents the index command
 var indexCmd = &cobra.Command{
 	Use:   "index",
-	Short: "A brief description of your command",
-	Long:  `A longer description`,
+	Short: "Re-create the index, and optionally search for a term",
 	Run:   indexRun,
 }
 
 var printindexCmd = &cobra.Command{
 	Use:   "printindex",
-	Short: "prints the indexed documents",
+	Short: "Prints the indexed documents",
 	Run:   printIndexRun,
 }
 
 func printIndexRun(cmd *cobra.Command, args []string) {
-	model.Connect("data/database.db")
+	dbname := path.Join(viper.GetString("data"), "database.db")
+	model.Connect(dbname)
 
 	pages, err := model.AllPages()
 	if err != nil {
@@ -49,22 +52,23 @@ func printIndexRun(cmd *cobra.Command, args []string) {
 
 	for _, p := range pages {
 		pDoc := index.PageToDoc(p)
-		pDocJson, _ := json.Marshal(pDoc)
-		fmt.Println(string(pDocJson))
+		pDocJSON, _ := json.Marshal(pDoc)
+		fmt.Println(string(pDocJSON))
 	}
 }
 
 func indexRun(cmd *cobra.Command, args []string) {
+	fname := path.Join(viper.GetString("data"), "index.bleve")
+	dbname := path.Join(viper.GetString("data"), "database.db")
 
-	// open a new index
-	fname := "data/index.bleve"
+	//Remove and re-create the index
 	os.RemoveAll(fname)
 	idx, err := index.New(fname)
 	if err != nil {
 		panic(err)
 	}
 
-	model.Connect("data/database.db")
+	model.Connect(dbname)
 
 	pages, err := model.AllPages()
 	if err != nil {

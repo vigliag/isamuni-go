@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"path"
 	"strings"
 
 	"github.com/gosimple/slug"
+	"github.com/spf13/viper"
 	"github.com/vigliag/isamuni-go/model"
 
 	_ "github.com/lib/pq"
@@ -191,7 +193,8 @@ func main() {
 		panic(err)
 	}
 
-	model.Connect("data/database.db")
+	dbname := path.Join(viper.GetString("data"), "database.db")
+	model.Connect(dbname)
 
 	copyUsers(isamunidb)
 	copyPages(isamunidb)

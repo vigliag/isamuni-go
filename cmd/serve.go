@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/spf13/viper"
+
 	"github.com/labstack/echo"
 	"github.com/spf13/cobra"
 	"github.com/vigliag/isamuni-go/model"
@@ -29,18 +31,18 @@ import (
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: serveRun,
+	Short: "Starts the isamuni server",
+	Run:   serveRun,
 }
 
 func serveRun(cmd *cobra.Command, args []string) {
-	dbPath := path.Join(cmd.Flag("dataPath").Value.String(), "database.db")
+	listenURL := viper.GetString("LISTEN_URL")
+	dataPath := viper.GetString("data")
+	dbPath := path.Join(dataPath, "database.db")
+
+	fmt.Println("Using data folder", dataPath)
+	fmt.Println("Using app url", viper.GetString("APP_URL"))
+
 	model.Connect(dbPath)
 
 	r := web.CreateServer(echo.New())
@@ -50,14 +52,15 @@ func serveRun(cmd *cobra.Command, args []string) {
 	//model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
 	//model.RegisterEmail("testuser", "testuser@example.com", "password", "user")
 
-	listenURL := cmd.Flag("listenURL").Value.String()
-	fmt.Println("Server started on " + listenURL)
+	fmt.Println("Server started on", listenURL)
 
 	log.Fatal(http.ListenAndServe(listenURL, r))
 	fmt.Println("serve called")
 }
 
 func init() {
+	serveCmd.Flags().String("LISTEN_URL", ":8080", "url isamuni should bind to, in the format [<ip>]:port")
+	viper.BindPFlag("LISTEN_URL", serveCmd.Flags().Lookup("LISTEN_URL"))
+
 	rootCmd.AddCommand(serveCmd)
-	serveCmd.Flags().String("listenURL", ":8080", "url isamuni should bind to, in the format [<ip>]:port")
 }
