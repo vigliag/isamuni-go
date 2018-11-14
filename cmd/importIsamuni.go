@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"database/sql"
@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gosimple/slug"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/vigliag/isamuni-go/model"
 
@@ -21,6 +22,13 @@ const (
 	password = "your-password"
 	dbname   = "isamuni_prod"
 )
+
+// indexCmd represents the index command
+var importIsamuniCmd = &cobra.Command{
+	Use:   "importisamuni",
+	Short: "Re-create the index, and optionally search for a term",
+	Run:   importIsamuniRun,
+}
 
 func getTags(isamunidb *sql.DB) map[int]string {
 
@@ -117,6 +125,25 @@ func copyUsers(isamunidb *sql.DB) {
 		if err != nil {
 			panic(err)
 		}
+
+		cv := model.ContentVersion{
+			Content: p.Content,
+			PageID:  p.ID,
+			UserID:  u.ID,
+		}
+
+		res = model.Db.Save(&cv)
+		if res.Error != nil {
+			fmt.Println(res.Error)
+			continue
+		}
+
+		p.ApprovedVersionID = cv.ID
+		res = model.Db.Save(&p)
+		if res.Error != nil {
+			fmt.Println(res.Error)
+			continue
+		}
 	}
 }
 
@@ -154,7 +181,26 @@ func copyPages(isamunidb *sql.DB) {
 		}
 		linksString = strings.Join(linksLines, "\n")
 
-		content := description.String + "\n\n### Links\n\n" + linksString
+		var b strings.Builder
+		b.WriteString(description.String)
+		b.WriteString("\n\n### Links\n\n")
+		b.WriteString(linksString)
+		b.WriteString("\n\n### Dati\n\n")
+		if s := strings.TrimSpace(website.String); s != "" {
+			fmt.Fprintf(&b, "- Sito web: %v\n", s)
+		}
+		if s := strings.TrimSpace(location.String); s != "" {
+			fmt.Fprintf(&b, "- Posizione: %v\n", s)
+		}
+		if s := strings.TrimSpace(province.String); s != "" {
+			fmt.Fprintf(&b, "- Città: %v\n", s)
+		}
+		if s := strings.TrimSpace(sector.String); s != "" {
+			fmt.Fprintf(&b, "- Settore: %v\n", s)
+		}
+		b.WriteString("\n")
+
+		content := b.String()
 		content = strings.Replace(content, "\r\n", "\n", -1)
 
 		p := model.Page{
@@ -173,10 +219,29 @@ func copyPages(isamunidb *sql.DB) {
 			fmt.Println(res.Error)
 			continue
 		}
+
+		cv := model.ContentVersion{
+			Content: content,
+			PageID:  p.ID,
+		}
+		res = model.Db.Save(&cv)
+		if res.Error != nil {
+			fmt.Println(res.Error)
+			continue
+		}
+
+		p.ApprovedVersionID = cv.ID
+
+		res = model.Db.Save(&p)
+		if res.Error != nil {
+			fmt.Println(res.Error)
+			continue
+		}
+
 	}
 }
 
-func main() {
+func importIsamuniRun(cmd *cobra.Command, args []string) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
@@ -208,4 +273,8 @@ func kindToPageType(kind int) model.PageType {
 		return model.PageCompany
 	}
 	return 0
+}
+
+func init() {
+	rootCmd.AddCommand(importIsamuniCmd)
 }

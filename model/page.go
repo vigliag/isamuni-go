@@ -145,7 +145,10 @@ func SavePage(p *Page, u *User) error {
 		p.Content = cv.Content
 		p.ApprovedVersionID = cv.ID
 		p.SetFieldsToParsedContent()
-		return Db.Save(p).Error
+		err := Db.Save(p).Error
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -205,4 +208,13 @@ func GetSiteStats() (SiteStats, error) {
 		}
 	}
 	return stats, nil
+}
+
+func GetPagesOfType(ptype PageType) ([]Page, error) {
+	var pages []Page
+	res := Db.Order("title").Find(&pages, "type = ? and approved_version_id <> 0", ptype)
+	if err := res.Error; err != nil {
+		return nil, err
+	}
+	return pages, nil
 }

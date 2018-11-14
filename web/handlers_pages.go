@@ -9,6 +9,7 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/labstack/echo"
+	"github.com/vigliag/isamuni-go/index"
 	"github.com/vigliag/isamuni-go/model"
 )
 
@@ -50,9 +51,8 @@ func CatName(ptype model.PageType) string {
 
 func indexPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var pages []model.Page
-		res := model.Db.Order("title").Find(&pages, "type = ?", ptype)
-		if err := res.Error; err != nil {
+		pages, err := model.GetPagesOfType(ptype)
+		if err != nil {
 			return err
 		}
 		title := strings.Title(CatName(ptype))
@@ -208,9 +208,8 @@ func updatePageH(c echo.Context) error {
 		if ptype == model.PageUser {
 			if model.UserPage(u) != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "This user has a page already")
-			} else {
-				p.OwnerID = u.ID
 			}
+			p.OwnerID = u.ID
 		}
 	}
 
@@ -230,6 +229,13 @@ func updatePageH(c echo.Context) error {
 	if err != nil {
 		log.Println(err)
 		return c.Render(http.StatusBadRequest, "pageEdit.html", H{"page": p, "error": "Could not save page"})
+	}
+
+	// Index the page
+	idx := index.DefaultIndex()
+	err = idx.IndexPage(&p)
+	if err != nil {
+		return err
 	}
 
 	return c.Redirect(http.StatusSeeOther, PageURL(&p))
