@@ -9,7 +9,6 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/labstack/echo"
-	"github.com/vigliag/isamuni-go/index"
 	"github.com/vigliag/isamuni-go/model"
 )
 
@@ -49,9 +48,9 @@ func CatName(ptype model.PageType) string {
 	return name
 }
 
-func indexPageH(ptype model.PageType) echo.HandlerFunc {
+func (ctl *Controller) indexPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		pages, err := model.GetPagesOfType(ptype)
+		pages, err := ctl.model.GetPagesOfType(ptype)
 		if err != nil {
 			return err
 		}
@@ -60,7 +59,7 @@ func indexPageH(ptype model.PageType) echo.HandlerFunc {
 	}
 }
 
-func newPageH(ptype model.PageType) echo.HandlerFunc {
+func (ctl *Controller) newPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		u := currentUser(c)
 		if u == nil {
@@ -73,7 +72,7 @@ func newPageH(ptype model.PageType) echo.HandlerFunc {
 	}
 }
 
-func showPageH(ptype model.PageType) echo.HandlerFunc {
+func (ctl *Controller) showPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		u := currentUser(c)
 		id := intParameter(c, "id")
@@ -81,7 +80,7 @@ func showPageH(ptype model.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Invalid ID")
 		}
 
-		page := model.FindPage(uint(id), ptype)
+		page := ctl.model.FindPage(uint(id), ptype)
 		if page == nil {
 			log.Printf("Page not found for %v\n", id)
 			return echo.NewHTTPError(404, "Page not found")
@@ -90,18 +89,18 @@ func showPageH(ptype model.PageType) echo.HandlerFunc {
 		return c.Render(200, "pageShow.html",
 			H{"page": page, "pageURL": PageURL(page),
 				"content": RenderMarkdown(page.Content),
-				"canEdit": model.CanEdit(page, u),
+				"canEdit": ctl.model.CanEdit(page, u),
 			})
 	}
 }
 
-func mePageH(c echo.Context) error {
+func (ctl *Controller) mePageH(c echo.Context) error {
 	u := currentUser(c)
 	if u == nil {
 		return c.Redirect(http.StatusFound, "/login")
 	}
 
-	page := model.UserPage(u)
+	page := ctl.model.UserPage(u)
 	if page == nil {
 		fmt.Printf("User page not found")
 		page = &model.Page{
@@ -125,7 +124,7 @@ func mePageH(c echo.Context) error {
 // - all versions greater than current
 // and the form should be populated with the contents of the latest version
 // the version shown in the editor should be clearly indicated
-func editPageH(ptype model.PageType) echo.HandlerFunc {
+func (ctl *Controller) editPageH(ptype model.PageType) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		u := currentUser(c)
 		if u == nil {
@@ -137,16 +136,16 @@ func editPageH(ptype model.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Invalid ID")
 		}
 
-		page := model.FindPage(uint(id), ptype)
+		page := ctl.model.FindPage(uint(id), ptype)
 		if page == nil {
 			log.Printf("Page not found for %v\n", id)
 			return echo.NewHTTPError(404, "Page not found")
 		}
-		if !model.CanEdit(page, u) {
+		if !ctl.model.CanEdit(page, u) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Can't edit this page")
 		}
 
-		versions, err := model.FindNewerPageVersions(page)
+		versions, err := ctl.model.FindNewerPageVersions(page)
 		if err != nil {
 			log.Println(err)
 		}
@@ -175,7 +174,7 @@ func editPageH(ptype model.PageType) echo.HandlerFunc {
 // if Page has no owner, on save a new ContentVersion is created and,
 //    if user is admin, the version is also saved in the Page model
 //    if user is not admin, a notification is generated
-func updatePageH(c echo.Context) error {
+func (ctl *Controller) updatePageH(c echo.Context) error {
 	u := currentUser(c)
 	if u == nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Not logged in")
@@ -193,20 +192,20 @@ func updatePageH(c echo.Context) error {
 
 	if pid != 0 {
 		//Trying to update an existing page
-		res := model.Db.Find(&p, pid)
+		res := ctl.model.Db.Find(&p, pid)
 
 		if res.Error != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Editing an invalid page")
 		}
 
-		if !model.CanEdit(&p, u) {
+		if !ctl.model.CanEdit(&p, u) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Only the owner of this page can edit it")
 		}
 	} else {
 		// New page
 
 		if ptype == model.PageUser {
-			if model.UserPage(u) != nil {
+			if ctl.model.UserPage(u) != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "This user has a page already")
 			}
 			p.OwnerID = u.ID
@@ -225,15 +224,14 @@ func updatePageH(c echo.Context) error {
 	p.ID = uint(pid)
 
 	// Save the page
-	err = model.SavePage(&p, u)
+	err = ctl.model.SavePage(&p, u)
 	if err != nil {
 		log.Println(err)
 		return c.Render(http.StatusBadRequest, "pageEdit.html", H{"page": p, "error": "Could not save page"})
 	}
 
 	// Index the page
-	idx := index.DefaultIndex()
-	err = idx.IndexPage(&p)
+	err = ctl.index.IndexPage(&p)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ package index
 import (
 	"fmt"
 	"log"
-	"regexp"
+	"os"
 	"strconv"
 
 	"github.com/blevesearch/bleve"
@@ -33,8 +33,6 @@ func (Doc) BleveType() string {
 	return "page"
 }
 
-var headersRegex = regexp.MustCompile(`(?m)^#+.+$`)
-
 func PageToDoc(p *model.Page) Doc {
 	d := model.ParseContent(p.Content)
 	d["name"] = p.Title
@@ -44,41 +42,46 @@ func PageToDoc(p *model.Page) Doc {
 var indexMapping *mapping.IndexMappingImpl
 
 type Index struct {
-	fname string
 	idx   bleve.Index
+	model *model.Model
 }
 
-var Idx *Index
+func New(idx bleve.Index, model *model.Model) *Index {
+	return &Index{idx, model}
+}
 
-func DefaultIndex() *Index {
-	var err error
+func (i *Index) Close() {
+	if i.idx != nil {
+		i.idx.Close()
+	}
+}
 
-	if Idx == nil {
-		Idx, err = Open("data/index.bleve")
+func OpenOrNewBleve(fname string) bleve.Index {
+	if _, err := os.Stat(fname); err != nil {
+		idx, err := NewBleve(fname)
+		if err != nil {
+			panic(err)
+		}
+		return idx
 	}
 
+	idx, err := OpenBleve(fname)
 	if err != nil {
 		panic(err)
 	}
-
-	return Idx
+	return idx
 }
 
-// New initializes an index with a given filename
-func New(fname string) (*Index, error) {
+// NewBleve initializes an index with a given filename
+func NewBleve(fname string) (bleve.Index, error) {
 	idx, err := bleve.New(fname, indexMapping)
-	if err != nil {
-		return nil, err
-	}
-	return &Index{fname, idx}, nil
+	return idx, err
 }
 
-func Open(fname string) (*Index, error) {
+// OpenBleve opens an existing bleve index
+func OpenBleve(fname string) (bleve.Index, error) {
 	idx, err := bleve.Open(fname)
-	if err != nil {
-		return nil, err
-	}
-	return &Index{fname, idx}, nil
+	return idx, err
 }
 
 // IndexPage puts a page in the index
@@ -108,10 +111,10 @@ func (i Index) searchPageByQueryString(querystring string) (*bleve.SearchResult,
 	return searchResults, nil
 }
 
-// SearchPageByQueryString search a page by a bleve query string
+// SearchPagesByQueryString search a page by a bleve query string
 func (i Index) SearchPagesByQueryString(queryString string) ([]SearchResult, error) {
 	// Create a map pageid -> page
-	pages, err := model.AllPages()
+	pages, err := i.model.AllPages()
 	if err != nil {
 		return nil, err
 	}

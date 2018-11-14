@@ -4,11 +4,10 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo"
-	"github.com/vigliag/isamuni-go/model"
 )
 
-func homeH(c echo.Context) error {
-	stats, err := model.GetSiteStats()
+func (ctl *Controller) homeH(c echo.Context) error {
+	stats, err := ctl.model.GetSiteStats()
 	if err != nil {
 		return err
 	}

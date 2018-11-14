@@ -8,7 +8,7 @@ import (
 	"github.com/vigliag/isamuni-go/model"
 )
 
-func searchH(c echo.Context) error {
+func (ctl *Controller) searchH(c echo.Context) error {
 	query := c.FormValue("query")
 
 	var resProfessionals []index.SearchResult
@@ -19,9 +19,7 @@ func searchH(c echo.Context) error {
 		return c.Render(http.StatusOK, "pageSearch.html", H{})
 	}
 
-	idx := index.DefaultIndex()
-
-	results, err := idx.SearchPagesByQueryString(query)
+	results, err := ctl.index.SearchPagesByQueryString(query)
 	if err != nil {
 		return err
 	}

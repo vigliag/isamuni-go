@@ -13,7 +13,6 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo-contrib/session"
-	"github.com/vigliag/isamuni-go/model"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/facebook"
 )
@@ -32,7 +31,7 @@ func facebookOauthConfig() *oauth2.Config {
 	}
 }
 
-func redirectToFacebookLogin(c echo.Context) error {
+func (ctl *Controller) redirectToFacebookLogin(c echo.Context) error {
 	state := base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(16))
 
 	sess, _ := session.Get("session", c)
@@ -50,7 +49,7 @@ type facebookUserData struct {
 }
 
 // User is redirected back to our site after accepting Facebook's permission dialog
-func completeFacebookLogin(c echo.Context) error {
+func (ctl *Controller) completeFacebookLogin(c echo.Context) error {
 	code := c.FormValue("code")
 	state := c.FormValue("state")
 
@@ -98,7 +97,7 @@ func completeFacebookLogin(c echo.Context) error {
 		return err
 	}
 
-	user, err := model.LoginOrCreateFB(currentUser(c), fbuser.ID, fbuser.Name, fbuser.Email)
+	user, err := ctl.model.LoginOrCreateFB(currentUser(c), fbuser.ID, fbuser.Name, fbuser.Email)
 	if err != nil {
 		return err
 	}
@@ -108,13 +107,13 @@ func completeFacebookLogin(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
-func loginPage(c echo.Context) error {
+func (ctl *Controller) loginPage(c echo.Context) error {
 	redirParam := c.QueryParam("redir")
 	c.Render(200, "login.html", H{"redir": redirParam})
 	return nil
 }
 
-func logout(c echo.Context) error {
+func (ctl *Controller) logout(c echo.Context) error {
 	sess, _ := session.Get("session", c)
 	sess.Values["email"] = ""
 	sess.Values["userid"] = uint(0)
@@ -122,7 +121,7 @@ func logout(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
-func loginWithEmail(c echo.Context) error {
+func (ctl *Controller) loginWithEmail(c echo.Context) error {
 	tplName := "login.html"
 	email := c.FormValue("email")
 	password := c.FormValue("password")
@@ -137,7 +136,7 @@ func loginWithEmail(c echo.Context) error {
 		return c.Render(http.StatusBadRequest, tplName, H{"error": "Empty email or password"})
 	}
 
-	user := model.LoginEmail(email, password)
+	user := ctl.model.LoginEmail(email, password)
 	if user == nil {
 		log.Println("Invalid email or password")
 		return c.Render(http.StatusNotFound, tplName, H{"error": "Invalid email or password"})
@@ -150,11 +149,11 @@ func loginWithEmail(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, redirect)
 }
 
-func setCurrentUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (ctl *Controller) setCurrentUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		sess, err := session.Get("session", c)
 		if err == nil && sess.Values["userid"] != nil {
-			user := model.RetrieveUser(sess.Values["userid"].(uint))
+			user := ctl.model.RetrieveUser(sess.Values["userid"].(uint))
 			c.Set("currentUser", user)
 		}
 		return next(c)

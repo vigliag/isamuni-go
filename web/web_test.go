@@ -2,16 +2,52 @@ package web
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/vigliag/isamuni-go/index"
+
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
 	"github.com/vigliag/isamuni-go/model"
 )
+
+type TestEnvironment struct {
+	model   *model.Model
+	index   *index.Index
+	ctl     *Controller
+	app     *echo.Echo
+	tempdir string
+}
+
+func (t *TestEnvironment) Close() {
+	t.model.Close()
+	t.index.Close()
+}
+
+func GetTestEnv() *TestEnvironment {
+	dir, err := ioutil.TempDir("", "example")
+	if err != nil {
+		log.Fatal(err)
+	}
+	m := model.New(model.ConnectTestDB())
+	bleveidx, err := index.NewBleve(dir)
+	panicIfNotNull(err)
+	idx := index.New(bleveidx, m)
+	ctl := NewController(m, idx)
+	return &TestEnvironment{
+		m, idx, ctl, CreateServer(echo.New(), ctl), dir,
+	}
+}
+
+func (t *TestEnvironment) TestClient() *TestClient {
+	return NewTestClient(t.app)
+}
 
 func panicIfNotNull(e error) {
 	if e != nil {
@@ -30,16 +66,16 @@ func assertHTMLReturned(t *testing.T, res *http.Response) {
 	assert.Equal(t, "text/html; charset=utf-8", strings.ToLower(res.Header.Get("content-type")))
 }
 
-func registerTestAdmin() *model.User {
-	u, err := model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
+func (t *TestEnvironment) registerTestAdmin() *model.User {
+	u, err := t.model.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
 	if err != nil {
 		panic(err)
 	}
 	return u
 }
 
-func registerTestUser() *model.User {
-	u, err := model.RegisterEmail("otheruser", "other@example.com", "password", "")
+func (t *TestEnvironment) registerTestUser() *model.User {
+	u, err := t.model.RegisterEmail("otheruser", "other@example.com", "password", "")
 	if err != nil {
 		panic(err)
 	}
@@ -47,19 +83,18 @@ func registerTestUser() *model.User {
 }
 
 func TestShowPageHandler(t *testing.T) {
-	model.ConnectTestDB()
-
-	r := CreateServer(echo.New())
+	env := GetTestEnv()
+	defer env.Close()
 
 	p := model.Page{
 		Content: "Ciao",
 		Type:    model.PageCompany,
 		Title:   "Example company",
 	}
-	model.Db.Save(&p)
+	env.model.Db.Save(&p)
 	assert.NotZero(t, p.ID)
 
-	client := NewTestClient(r)
+	client := env.TestClient()
 	res := client.Get(fmt.Sprintf("/companies/%d", p.ID))
 	assertHTMLReturned(t, res)
 
@@ -68,15 +103,13 @@ func TestShowPageHandler(t *testing.T) {
 }
 
 func TestMeHandler(t *testing.T) {
-	model.ConnectTestDB()
-	defer model.Close()
+	env := GetTestEnv()
+	defer env.Close()
 
-	u := registerTestAdmin()
-
-	r := CreateServer(echo.New())
+	u := env.registerTestAdmin()
 
 	// Before login
-	client := NewTestClient(r)
+	client := env.TestClient()
 	res := client.Get("/me")
 	assert.Equal(t, http.StatusFound, res.StatusCode)
 
@@ -90,33 +123,28 @@ func TestMeHandler(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	model.ConnectTestDB()
-	defer model.Db.Close()
+	env := GetTestEnv()
+	defer env.Close()
+	client := env.TestClient()
 
-	u := registerTestAdmin()
-
-	r := CreateServer(echo.New())
-	client := NewTestClient(r)
-
+	u := env.registerTestAdmin()
 	res := client.Login(*u.Email, "password")
 	if res.StatusCode >= 400 {
 		assert.Fail(t, "Login returned error status code")
 	}
 	assert.NotEmpty(t, res.Cookies)
 
-	client = NewTestClient(r)
+	client = env.TestClient()
 	res = client.Login(*u.Email, "wrongPassword")
 	assert.Equal(t, 404, res.StatusCode)
 }
 
 func TestInsertPage(t *testing.T) {
-	model.ConnectTestDB()
-	defer model.Db.Close()
+	env := GetTestEnv()
+	defer env.Close()
 
-	u := registerTestAdmin()
-
-	r := CreateServer(echo.New())
-	client := NewTestClient(r)
+	u := env.registerTestAdmin()
+	client := env.TestClient()
 	client.MustLogin(*u.Email, "password")
 
 	form := url.Values{}
@@ -138,11 +166,11 @@ func TestInsertPage(t *testing.T) {
 }
 
 func TestEditPage(t *testing.T) {
-	model.ConnectTestDB()
-	defer model.Close()
+	env := GetTestEnv()
+	defer env.Close()
 
-	u := registerTestAdmin()
-	u2 := registerTestUser()
+	u := env.registerTestAdmin()
+	u2 := env.registerTestUser()
 
 	p := &model.Page{
 		Content: "Ciao",
@@ -150,38 +178,33 @@ func TestEditPage(t *testing.T) {
 		Title:   "Example company",
 	}
 
-	err := model.SavePage(p, u)
+	err := env.model.SavePage(p, u)
 	assert.NoError(t, err)
 
-	r := CreateServer(echo.New())
-
 	// Test with admin
-	client := NewTestClient(r)
+	client := env.TestClient()
 	client.MustLogin(*u.Email, "password")
 	res := client.Get(fmt.Sprintf("/companies/%d/edit", p.ID))
 	assertHTMLReturned(t, res)
 
 	// Test with non-admin
-	client2 := NewTestClient(r)
+	client2 := env.TestClient()
 	client2.MustLogin(*u2.Email, "password")
 	res = client2.Get(fmt.Sprintf("/companies/%d/edit", p.ID))
 	assertHTMLReturned(t, res)
 }
 
 func TestUserPages(t *testing.T) {
-	r := CreateServer(echo.New())
-	client := NewTestClient(r)
-
+	env := GetTestEnv()
+	defer env.Close()
+	client := env.TestClient()
 	assertHTMLReturned(t, client.Get("/login"))
-	//assertHTMLReturned(t, client.Get("/companies/new"))
 }
 
 func TestSearch(t *testing.T) {
-	model.ConnectTestDB()
-	defer model.Close()
-
-	r := CreateServer(echo.New())
-	client := NewTestClient(r)
+	env := GetTestEnv()
+	defer env.Close()
+	client := env.TestClient()
 	assertHTMLReturned(t, client.Get("/search"))
 	assertHTMLReturned(t, client.Get("/search?query=promuove"))
 }

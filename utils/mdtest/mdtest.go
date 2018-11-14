@@ -11,8 +11,8 @@ import (
 
 func main() {
 	dbname := path.Join(viper.GetString("data"), "database.db")
-	model.Connect(dbname)
-	p := model.FindPage(71, model.PageUser)
+	m := model.New(model.Connect(dbname))
+	p := m.FindPage(71, model.PageUser)
 	content := p.Content
 	//content = strings.Replace(content, "\r\n", "\n", -1)
 	os.Stdout.WriteString(string(web.RenderMarkdown(content)))

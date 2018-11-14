@@ -27,14 +27,17 @@ func serveRun(cmd *cobra.Command, args []string) {
 	listenURL := viper.GetString("LISTEN_URL")
 	dataPath := viper.GetString("data")
 	dbPath := path.Join(dataPath, "database.db")
-
+	indexPath := path.Join(dataPath, "index.bleve")
 	fmt.Println("Using data folder", dataPath)
 	fmt.Println("Using app url", viper.GetString("APP_URL"))
 
-	model.Connect(dbPath)
-	index.DefaultIndex() //initialize default index
+	db := model.Connect(dbPath)
+	m := model.New(db)
+	bleveidx := index.OpenOrNewBleve(indexPath)
+	idx := index.New(bleveidx, m)
+	ctl := web.NewController(m, idx)
 
-	r := web.CreateServer(echo.New())
+	r := web.CreateServer(echo.New(), ctl)
 
 	//r.Use(middleware.Recover())
 

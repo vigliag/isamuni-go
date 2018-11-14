@@ -7,7 +7,7 @@ import (
 )
 
 func TestFindPage(t *testing.T) {
-	ConnectTestDB()
+	m := New(ConnectTestDB())
 
 	p := Page{
 		Content: "Ciao",
@@ -15,16 +15,16 @@ func TestFindPage(t *testing.T) {
 		Title:   "Example company",
 	}
 
-	res := Db.Save(&p)
+	res := m.Db.Save(&p)
 	assert.Nil(t, res.Error)
 	assert.NotZero(t, p.ID)
 
-	rpage := FindPage(p.ID, p.Type)
+	rpage := m.FindPage(p.ID, p.Type)
 	assert.NotNil(t, rpage)
 	assert.Equal(t, p.Title, rpage.Title)
 
-	p2 := FindPage(12515, PageCompany)
+	p2 := m.FindPage(12515, PageCompany)
 	assert.Nil(t, p2)
 
-	Db.Close()
+	m.Db.Close()
 }

@@ -19,18 +19,18 @@ type User struct {
 	Role           string
 }
 
-func RetrieveUserFB(facebookid string) *User {
+func (m *Model) RetrieveUserFB(facebookid string) *User {
 	var u User
-	res := Db.First(&u, "facebook_id = ?", facebookid)
+	res := m.Db.First(&u, "facebook_id = ?", facebookid)
 	if res.Error != nil {
 		return nil
 	}
 	return &u
 }
 
-func LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEmail *string) (*User, error) {
+func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEmail *string) (*User, error) {
 	// if that facebookID is already in the system, we want to log the user in with that
-	existingFacebookUser := RetrieveUserFB(facebookID)
+	existingFacebookUser := m.RetrieveUserFB(facebookID)
 	if existingFacebookUser != nil {
 		// Update user email if needed. Mark it as verified
 		if maybeEmail != nil {
@@ -38,7 +38,7 @@ func LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEma
 				existingFacebookUser.Email = maybeEmail
 			}
 			existingFacebookUser.EmailVerified = true
-			err := Db.Save(&existingFacebookUser).Error
+			err := m.Db.Save(&existingFacebookUser).Error
 			if err != nil {
 				return nil, err
 			}
@@ -50,7 +50,7 @@ func LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEma
 	// then we want to add the facebook data to the existing profile
 	if currentUser != nil {
 		currentUser.FacebookID = &facebookID
-		err := Db.Save(&currentUser).Error
+		err := m.Db.Save(&currentUser).Error
 		if err != nil {
 			return nil, err
 		}
@@ -61,12 +61,12 @@ func LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEma
 	// check if the user is already registered by his facebook mail
 	if maybeEmail != nil {
 		var existingEmailUser User
-		err := Db.First(&existingEmailUser, "email = ? and email_verified = 1", maybeEmail).Error
+		err := m.Db.First(&existingEmailUser, "email = ? and email_verified = 1", maybeEmail).Error
 		if err == nil {
 			existingEmailUser.FacebookID = &facebookID
 			existingEmailUser.EmailVerified = true
 
-			err = Db.Save(&existingEmailUser).Error
+			err = m.Db.Save(&existingEmailUser).Error
 			if err != nil {
 				return nil, err
 			}
@@ -86,34 +86,34 @@ func LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEma
 		newUser.EmailVerified = true
 	}
 
-	err := Db.Save(newUser).Error
+	err := m.Db.Save(newUser).Error
 	if err != nil {
 		return nil, err
 	}
 	return newUser, nil
 }
 
-func UserPage(u *User) *Page {
+func (m *Model) UserPage(u *User) *Page {
 	var page Page
-	res := Db.First(&page, "owner_id = ? and type = ?", u.ID, PageUser)
+	res := m.Db.First(&page, "owner_id = ? and type = ?", u.ID, PageUser)
 	if res.Error != nil {
 		return nil
 	}
 	return &page
 }
 
-func RetrieveUser(id uint) *User {
+func (m *Model) RetrieveUser(id uint) *User {
 	var u User
-	res := Db.First(&u, "id = ?", id)
+	res := m.Db.First(&u, "id = ?", id)
 	if res.Error != nil {
 		return nil
 	}
 	return &u
 }
 
-func LoginEmail(email string, password string) *User {
+func (m *Model) LoginEmail(email string, password string) *User {
 	var u User
-	res := Db.First(&u, "email = ?", email)
+	res := m.Db.First(&u, "email = ?", email)
 	if res.Error != nil {
 		return nil
 	}
@@ -125,7 +125,7 @@ func LoginEmail(email string, password string) *User {
 	return &u
 }
 
-func RegisterEmail(username string, email string, password string, role string) (*User, error) {
+func (m *Model) RegisterEmail(username string, email string, password string, role string) (*User, error) {
 	u := User{
 		Username:      username,
 		Email:         &email,
@@ -133,7 +133,7 @@ func RegisterEmail(username string, email string, password string, role string) 
 		EmailVerified: true,
 	}
 	u.SetPassword(password)
-	res := Db.Save(&u)
+	res := m.Db.Save(&u)
 	if res.Error != nil {
 		return nil, res.Error
 	}

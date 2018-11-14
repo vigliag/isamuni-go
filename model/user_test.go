@@ -18,8 +18,8 @@ func TestUser_CheckPassword(t *testing.T) {
 	assert.False(t, u.CheckPassword("wrong"))
 }
 
-func registerTestAdmin() *User {
-	u1, err := RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
+func (m *Model) registerTestAdmin() *User {
+	u1, err := m.RegisterEmail("vigliag", "vigliag@gmail.com", "password", "admin")
 	if err != nil {
 		panic(err)
 	}
@@ -27,20 +27,20 @@ func registerTestAdmin() *User {
 }
 
 func TestDB_Login(t *testing.T) {
-	ConnectTestDB()
+	m := Model{ConnectTestDB()}
 
-	u1 := registerTestAdmin()
+	u1 := m.registerTestAdmin()
 
-	u2 := LoginEmail(*u1.Email, "password")
+	u2 := m.LoginEmail(*u1.Email, "password")
 	assert.Equal(t, u1.ID, u2.ID)
 
-	u3 := LoginEmail("nonexistent", "password")
+	u3 := m.LoginEmail("nonexistent", "password")
 	assert.Nil(t, u3)
 
-	u4 := LoginEmail(*u1.Email, "wrongpassword")
+	u4 := m.LoginEmail(*u1.Email, "wrongpassword")
 	assert.Nil(t, u4)
 
-	u5, err := RegisterEmail(u1.Username, *u1.Email, "password", "user")
+	u5, err := m.RegisterEmail(u1.Username, *u1.Email, "password", "user")
 	assert.Error(t, err)
 	assert.Nil(t, u5)
 }

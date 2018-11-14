@@ -53,7 +53,7 @@ func getTags(isamunidb *sql.DB) map[int]string {
 	return tags
 }
 
-func copyUsers(isamunidb *sql.DB) {
+func copyUsers(isamunidb *sql.DB, m *model.Model) {
 	tags := getTags(isamunidb)
 
 	rows, err := isamunidb.Query("select id, name, occupation, description, projects, links, tags, uid from users where public_profile= true;")
@@ -84,7 +84,7 @@ func copyUsers(isamunidb *sql.DB) {
 			FacebookID: &fbid.String,
 			Username:   name.String,
 		}
-		err := model.Db.Save(&u).Error
+		err := m.Db.Save(&u).Error
 
 		p := model.Page{
 			Title:   name.String,
@@ -116,7 +116,7 @@ func copyUsers(isamunidb *sql.DB) {
 		}
 		p.Content = strings.Replace(b.String(), "\r\n", "\n", -1)
 
-		res := model.Db.Save(&p)
+		res := m.Db.Save(&p)
 		if res.Error != nil {
 			panic(res.Error)
 		}
@@ -132,14 +132,14 @@ func copyUsers(isamunidb *sql.DB) {
 			UserID:  u.ID,
 		}
 
-		res = model.Db.Save(&cv)
+		res = m.Db.Save(&cv)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
 		}
 
 		p.ApprovedVersionID = cv.ID
-		res = model.Db.Save(&p)
+		res = m.Db.Save(&p)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
@@ -147,7 +147,7 @@ func copyUsers(isamunidb *sql.DB) {
 	}
 }
 
-func copyPages(isamunidb *sql.DB) {
+func copyPages(isamunidb *sql.DB, m *model.Model) {
 	q := `select name, kind, website,
 				concat_ws(chr(10), links, fbpage, twitterpage) as links,
 				location, province, description, sector
@@ -214,7 +214,7 @@ func copyPages(isamunidb *sql.DB) {
 			City:    province.String,
 		}
 
-		res := model.Db.Save(&p)
+		res := m.Db.Save(&p)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
@@ -224,7 +224,7 @@ func copyPages(isamunidb *sql.DB) {
 			Content: content,
 			PageID:  p.ID,
 		}
-		res = model.Db.Save(&cv)
+		res = m.Db.Save(&cv)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
@@ -232,7 +232,7 @@ func copyPages(isamunidb *sql.DB) {
 
 		p.ApprovedVersionID = cv.ID
 
-		res = model.Db.Save(&p)
+		res = m.Db.Save(&p)
 		if res.Error != nil {
 			fmt.Println(res.Error)
 			continue
@@ -246,6 +246,10 @@ func importIsamuniRun(cmd *cobra.Command, args []string) {
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
 
+	dbname := path.Join(viper.GetString("data"), "database.db")
+	m := &model.Model{model.Connect(dbname)}
+	defer m.Close()
+
 	isamunidb, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -258,11 +262,10 @@ func importIsamuniRun(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	dbname := path.Join(viper.GetString("data"), "database.db")
 	model.Connect(dbname)
 
-	copyUsers(isamunidb)
-	copyPages(isamunidb)
+	copyUsers(isamunidb, m)
+	copyPages(isamunidb, m)
 }
 
 func kindToPageType(kind int) model.PageType {

@@ -89,9 +89,9 @@ type ContentVersion struct {
 	Content string
 }
 
-func FindNewerPageVersions(page *Page) ([]ContentVersion, error) {
+func (m *Model) FindNewerPageVersions(page *Page) ([]ContentVersion, error) {
 	var versions []ContentVersion
-	res := Db.
+	res := m.Db.
 		Preload("User").
 		Order("id desc").
 		Find(&versions, "page_id = ? and id > ?", page.ID, page.ApprovedVersionID)
@@ -99,24 +99,24 @@ func FindNewerPageVersions(page *Page) ([]ContentVersion, error) {
 }
 
 //FindPage returns a page of a given type by ID or null
-func FindPage(id uint, ptype PageType) *Page {
+func (m *Model) FindPage(id uint, ptype PageType) *Page {
 	var page Page
-	res := Db.First(&page, " id = ? and type = ? ", id, ptype)
+	res := m.Db.First(&page, " id = ? and type = ? ", id, ptype)
 	if res.Error != nil {
 		return nil
 	}
 	return &page
 }
 
-func CanApproveEdits(p *Page, u *User) bool {
+func (m *Model) CanApproveEdits(p *Page, u *User) bool {
 	return u != nil && (u.Role == "admin" || u.ID == p.OwnerID)
 }
 
-func CanEdit(p *Page, u *User) bool {
+func (m *Model) CanEdit(p *Page, u *User) bool {
 	return u != nil && (u.Role == "admin" || p.OwnerID == 0 || u.ID == p.OwnerID)
 }
 
-func SavePage(p *Page, u *User) error {
+func (m *Model) SavePage(p *Page, u *User) error {
 	if p.Slug == "" {
 		p.Slug = slug.Make(p.Title)
 	}
@@ -124,7 +124,7 @@ func SavePage(p *Page, u *User) error {
 	// If the page is new, we save it to the database first
 	// It will have no ApprovedVersionID at this stage, and will be unlisted
 	if p.ID == 0 {
-		if err := Db.Save(p).Error; err != nil {
+		if err := m.Db.Save(p).Error; err != nil {
 			return err
 		}
 	}
@@ -135,17 +135,17 @@ func SavePage(p *Page, u *User) error {
 		PageID:  p.ID,
 		UserID:  u.ID,
 	}
-	if err := Db.Save(&cv).Error; err != nil {
+	if err := m.Db.Save(&cv).Error; err != nil {
 		return err
 	}
 
 	// If an admin or owner is submitting this version, approve it
 	// Assign the contentVersion to the page and parse the page's contents
-	if CanApproveEdits(p, u) {
+	if m.CanApproveEdits(p, u) {
 		p.Content = cv.Content
 		p.ApprovedVersionID = cv.ID
 		p.SetFieldsToParsedContent()
-		err := Db.Save(p).Error
+		err := m.Db.Save(p).Error
 		if err != nil {
 			return err
 		}
@@ -172,9 +172,9 @@ func (p PageType) CatName() string {
 	return ""
 }
 
-func AllPages() ([]*Page, error) {
+func (m *Model) AllPages() ([]*Page, error) {
 	var pages []*Page
-	return pages, Db.Find(&pages).Error
+	return pages, m.Db.Find(&pages).Error
 }
 
 type SiteStats struct {
@@ -184,9 +184,9 @@ type SiteStats struct {
 	NWiki          int
 }
 
-func GetSiteStats() (SiteStats, error) {
+func (m *Model) GetSiteStats() (SiteStats, error) {
 	var stats SiteStats
-	rows, err := Db.Table("pages").Select("type, count(*)").Group("type").Rows()
+	rows, err := m.Db.Table("pages").Select("type, count(*)").Group("type").Rows()
 	if err != nil {
 		return stats, err
 	}
@@ -210,9 +210,9 @@ func GetSiteStats() (SiteStats, error) {
 	return stats, nil
 }
 
-func GetPagesOfType(ptype PageType) ([]Page, error) {
+func (m *Model) GetPagesOfType(ptype PageType) ([]Page, error) {
 	var pages []Page
-	res := Db.Order("title").Find(&pages, "type = ? and approved_version_id <> 0", ptype)
+	res := m.Db.Order("title").Find(&pages, "type = ? and approved_version_id <> 0", ptype)
 	if err := res.Error; err != nil {
 		return nil, err
 	}

@@ -43,9 +43,10 @@ var printindexCmd = &cobra.Command{
 
 func printIndexRun(cmd *cobra.Command, args []string) {
 	dbname := path.Join(viper.GetString("data"), "database.db")
-	model.Connect(dbname)
+	db := model.Connect(dbname)
+	m := model.Model{db}
 
-	pages, err := model.AllPages()
+	pages, err := m.AllPages()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,19 +59,21 @@ func printIndexRun(cmd *cobra.Command, args []string) {
 }
 
 func indexRun(cmd *cobra.Command, args []string) {
-	fname := path.Join(viper.GetString("data"), "index.bleve")
 	dbname := path.Join(viper.GetString("data"), "database.db")
+	m := &model.Model{model.Connect(dbname)}
+	defer m.Close()
 
 	//Remove and re-create the index
+	fname := path.Join(viper.GetString("data"), "index.bleve")
 	os.RemoveAll(fname)
-	idx, err := index.New(fname)
+	blvidx, err := index.NewBleve(fname)
 	if err != nil {
 		panic(err)
 	}
+	idx := index.New(blvidx, m)
+	defer idx.Close()
 
-	model.Connect(dbname)
-
-	pages, err := model.AllPages()
+	pages, err := m.AllPages()
 	if err != nil {
 		log.Fatal(err)
 	}

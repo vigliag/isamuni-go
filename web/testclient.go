@@ -22,8 +22,8 @@ type TestClient struct {
 	h       http.Handler
 }
 
-func NewTestClient(h http.Handler) TestClient {
-	return TestClient{h: h}
+func NewTestClient(h http.Handler) *TestClient {
+	return &TestClient{h: h}
 }
 
 func (c *TestClient) Login(email, password string) *http.Response {

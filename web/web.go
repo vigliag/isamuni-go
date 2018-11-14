@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/vigliag/isamuni-go/index"
+
 	"github.com/spf13/viper"
 
 	rice "github.com/GeertJohan/go.rice"
@@ -15,6 +17,15 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/vigliag/isamuni-go/model"
 )
+
+type Controller struct {
+	model *model.Model
+	index *index.Index
+}
+
+func NewController(model *model.Model, index *index.Index) *Controller {
+	return &Controller{model, index}
+}
 
 // Helpers
 /////////////
@@ -51,7 +62,7 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 }
 
 // CreateServer attaches the app's routes and middlewares to an Echo server
-func CreateServer(r *echo.Echo) *echo.Echo {
+func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	t := loadTemplates()
 	r.Renderer = t
 
@@ -72,48 +83,48 @@ func CreateServer(r *echo.Echo) *echo.Echo {
 
 	r.Use(session.Middleware(cs))
 	r.Use(middleware.Logger())
-	r.Use(setCurrentUserMiddleware)
+	r.Use(ctl.setCurrentUserMiddleware)
 
 	staticBox := rice.MustFindBox("static")
 	staticFileServer := http.StripPrefix("/static/", http.FileServer(staticBox.HTTPBox()))
 	r.GET("/static/*", echo.WrapHandler(staticFileServer))
 
-	r.GET("/", homeH)
+	r.GET("/", ctl.homeH)
 
-	r.GET("/login", loginPage)
-	r.GET("/logout", loginPage)
-	r.POST("/login", loginWithEmail)
-	r.POST("/logout", logout)
+	r.GET("/login", ctl.loginPage)
+	r.GET("/logout", ctl.loginPage)
+	r.POST("/login", ctl.loginWithEmail)
+	r.POST("/logout", ctl.logout)
 
-	r.GET("/login/facebook", redirectToFacebookLogin)
-	r.GET("/oauth/fb", completeFacebookLogin)
+	r.GET("/login/facebook", ctl.redirectToFacebookLogin)
+	r.GET("/oauth/fb", ctl.completeFacebookLogin)
 
-	r.GET("/professionals/:id", showPageH(model.PageUser))
-	r.GET("/wiki/:id", showPageH(model.PageWiki))
-	r.GET("/companies/:id", showPageH(model.PageCompany))
-	r.GET("/communities/:id", showPageH(model.PageCommunity))
+	r.GET("/professionals/:id", ctl.showPageH(model.PageUser))
+	r.GET("/wiki/:id", ctl.showPageH(model.PageWiki))
+	r.GET("/companies/:id", ctl.showPageH(model.PageCompany))
+	r.GET("/communities/:id", ctl.showPageH(model.PageCommunity))
 
-	r.GET("/professionals/new", newPageH(model.PageUser))
-	r.GET("/wiki/new", newPageH(model.PageWiki))
-	r.GET("/companies/new", newPageH(model.PageCompany))
-	r.GET("/communities/new", newPageH(model.PageCommunity))
+	r.GET("/professionals/new", ctl.newPageH(model.PageUser))
+	r.GET("/wiki/new", ctl.newPageH(model.PageWiki))
+	r.GET("/companies/new", ctl.newPageH(model.PageCompany))
+	r.GET("/communities/new", ctl.newPageH(model.PageCommunity))
 
-	r.GET("/professionals/:id/edit", editPageH(model.PageUser))
-	r.GET("/wiki/:id/edit", editPageH(model.PageWiki))
-	r.GET("/companies/:id/edit", editPageH(model.PageCompany))
-	r.GET("/communities/:id/edit", editPageH(model.PageCommunity))
+	r.GET("/professionals/:id/edit", ctl.editPageH(model.PageUser))
+	r.GET("/wiki/:id/edit", ctl.editPageH(model.PageWiki))
+	r.GET("/companies/:id/edit", ctl.editPageH(model.PageCompany))
+	r.GET("/communities/:id/edit", ctl.editPageH(model.PageCommunity))
 
-	r.GET("/professionals", indexPageH(model.PageUser))
-	r.GET("/wiki", indexPageH(model.PageWiki))
-	r.GET("/companies", indexPageH(model.PageCompany))
-	r.GET("/communities", indexPageH(model.PageCommunity))
+	r.GET("/professionals", ctl.indexPageH(model.PageUser))
+	r.GET("/wiki", ctl.indexPageH(model.PageWiki))
+	r.GET("/companies", ctl.indexPageH(model.PageCompany))
+	r.GET("/communities", ctl.indexPageH(model.PageCommunity))
 
-	r.GET("/me", mePageH)
+	r.GET("/me", ctl.mePageH)
 
-	r.GET("/search", searchH)
+	r.GET("/search", ctl.searchH)
 	r.GET("/privacy", serveTemplate("privacy"))
 
-	r.POST("/pages", updatePageH)
-	r.POST("/pages/:id", updatePageH)
+	r.POST("/pages", ctl.updatePageH)
+	r.POST("/pages/:id", ctl.updatePageH)
 	return r
 }
