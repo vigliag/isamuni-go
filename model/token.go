@@ -1,10 +1,8 @@
 package model
 
 import (
-	"encoding/base64"
 	"time"
 
-	"github.com/gorilla/securecookie"
 	"github.com/jinzhu/gorm"
 )
 
@@ -27,7 +25,7 @@ func (m *Model) DeleteExpiredTokens() error {
 }
 
 func (m *Model) CreateToken(identifier uint) (string, error) {
-	state := base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(16))
+	state := GenRandomString()
 	t := Token{
 		Expiration: time.Now().Add(time.Minute * 10),
 		Value:      state,

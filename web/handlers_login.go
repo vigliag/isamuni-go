@@ -2,12 +2,12 @@ package web
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gorilla/securecookie"
+	"github.com/vigliag/isamuni-go/model"
+
 	"github.com/spf13/viper"
 
 	"github.com/labstack/echo"
@@ -31,7 +31,7 @@ func facebookOauthConfig() *oauth2.Config {
 }
 
 func (ctl *Controller) redirectToFacebookLogin(c echo.Context) error {
-	state := base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(16))
+	state := model.GenRandomString()
 
 	sess, _ := session.Get("session", c)
 	sess.Values["oauth_state"] = state
@@ -102,6 +102,7 @@ func (ctl *Controller) completeFacebookLogin(c echo.Context) error {
 	}
 
 	sess.Values["userid"] = user.ID
+	sess.Values["session_token"] = user.SessionToken
 	sess.Save(c.Request(), c.Response())
 	return c.Redirect(http.StatusSeeOther, "/")
 }
@@ -114,8 +115,8 @@ func (ctl *Controller) loginPage(c echo.Context) error {
 
 func (ctl *Controller) logout(c echo.Context) error {
 	sess, _ := session.Get("session", c)
-	sess.Values["email"] = ""
-	sess.Values["userid"] = uint(0)
+	delete(sess.Values, "userid")
+	delete(sess.Values, "session_token")
 	sess.Save(c.Request(), c.Response())
 	return c.Redirect(http.StatusSeeOther, "/")
 }
@@ -143,6 +144,7 @@ func (ctl *Controller) loginWithEmail(c echo.Context) error {
 
 	sess, _ := session.Get("session", c)
 	sess.Values["userid"] = user.ID
+	sess.Values["session_token"] = user.SessionToken
 	sess.Save(c.Request(), c.Response())
 
 	return c.Redirect(http.StatusSeeOther, redirect)
@@ -150,11 +152,23 @@ func (ctl *Controller) loginWithEmail(c echo.Context) error {
 
 func (ctl *Controller) setCurrentUserMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		// If there is no session, or the user is not logged in
+		// then continue without setting the current user
 		sess, err := session.Get("session", c)
-		if err == nil && sess.Values["userid"] != nil {
-			user := ctl.model.RetrieveUser(sess.Values["userid"].(uint))
-			c.Set("currentUser", user)
+		if err != nil || sess.Values["userid"] == nil {
+			return next(c)
 		}
+
+		// Retrieve user from the database and put it into the request context
+		user := ctl.model.RetrieveUser(sess.Values["userid"].(uint))
+
+		// If the session has been expired (for example as a result of a password change)
+		// then log out the user
+		if user.SessionToken != "" && user.SessionToken != sess.Values["session_token"] {
+			return ctl.logout(c)
+		}
+
+		c.Set("currentUser", user)
 		return next(c)
 	}
 }

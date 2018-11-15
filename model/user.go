@@ -17,7 +17,7 @@ type User struct {
 	EmailVerified  bool
 	FacebookID     *string `gorm:"unique"`
 	Role           string
-	//TODO ExpiredPassword bool
+	SessionToken   string //set when the password is changed, used to log a user out of all sessions
 }
 
 func (m *Model) RetrieveUserFB(facebookid string) *User {
@@ -77,9 +77,10 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 	// We are not logged in, and both the facebookID and the mail are not
 	// in our system, we create a new User
 	newUser := &User{
-		Username:   name,
-		FacebookID: &facebookID,
-		Role:       "user",
+		Username:     name,
+		FacebookID:   &facebookID,
+		Role:         "user",
+		SessionToken: GenRandomString(),
 	}
 
 	if maybeEmail != nil {
@@ -114,7 +115,7 @@ func (m *Model) RetrieveUser(id uint) *User {
 
 func (m *Model) LoginEmail(email string, password string) *User {
 	var u User
-	res := m.Db.First(&u, "email = ?", email)
+	res := m.Db.First(&u, "email=?", email)
 	if res.Error != nil {
 		return nil
 	}
@@ -149,6 +150,7 @@ func (u *User) SetPassword(password string) {
 	}
 	u.Salt = string(salt)
 	u.HashedPassword = HashPassword(password, salt)
+	u.SessionToken = GenRandomString()
 }
 
 func (u *User) CheckPassword(password string) bool {

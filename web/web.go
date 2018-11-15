@@ -30,15 +30,6 @@ func NewController(model *model.Model, index *index.Index) *Controller {
 // Helpers
 /////////////
 
-func getSessionKey() []byte {
-	sessKey := viper.GetString("SESSION_KEY")
-	if sessKey == "" {
-		fmt.Println("SESSION_KEY not set, generating new session key")
-		return securecookie.GenerateRandomKey(32)
-	}
-	return []byte(sessKey)
-}
-
 func intParameter(c echo.Context, param string) int {
 	id, err := strconv.Atoi(c.Param(param))
 	if err != nil {
@@ -77,24 +68,30 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	t := loadTemplates()
 	r.Renderer = t
+	r.HTTPErrorHandler = customHTTPErrorHandler
 
-	//Initialize a CookieStore (inlined NewCookieStore method)
-	//Cookies are signed but not encrypted
-	//We rely on SameSite to prevent CSRF attacks
+	// Obtain a session key to use for signing cookies
+	// If no session_key was set, generate one (useful in development)
+	sessKey := []byte(viper.GetString("SESSION_KEY"))
+	if len(sessKey) == 0 {
+		fmt.Println("SESSION_KEY not set, generating new session key")
+		sessKey = securecookie.GenerateRandomKey(32)
+	}
+
+	//Initialize a CookieStore to save sessions(inlined NewCookieStore method)
+	//Contents of the sessions will be signed but not encrypted cookies
+	//We set SameSite as an additional measure to prevent CSRF attacks
 	cs := &sessions.CookieStore{
-		Codecs: securecookie.CodecsFromPairs(getSessionKey()),
+		Codecs: securecookie.CodecsFromPairs(sessKey),
 		Options: &sessions.Options{
 			Path:     "/",
-			MaxAge:   86400 * 30,
+			MaxAge:   86400 * 30, //30 days
 			SameSite: http.SameSiteLaxMode,
 		},
 	}
 	cs.MaxAge(cs.Options.MaxAge)
 
-	r.HTTPErrorHandler = customHTTPErrorHandler
-
 	r.Pre(middleware.RemoveTrailingSlash())
-
 	r.Use(session.Middleware(cs))
 	r.Use(middleware.Logger())
 	r.Use(ctl.setCurrentUserMiddleware)
