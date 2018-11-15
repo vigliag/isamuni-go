@@ -15,6 +15,7 @@
 {{ end }}
 
 <form action="{{ or .action "/pages" }}" method="post">
+    <input type="hidden" name="csrf" value="{{.csrf}}"></input>
     <label for="title">Nome</label>
     <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
     {{ if eq .currentUser.Role "admin" }}

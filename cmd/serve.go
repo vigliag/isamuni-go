@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/spf13/cobra"
 	"github.com/vigliag/isamuni-go/model"
 	"github.com/vigliag/isamuni-go/web"
@@ -38,6 +39,11 @@ func serveRun(cmd *cobra.Command, args []string) {
 	ctl := web.NewController(m, idx)
 
 	r := web.CreateServer(echo.New(), ctl)
+
+	// attach CSRF middleware here, so that we don't have it during testing
+	r.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "form:csrf",
+	}))
 
 	//r.Use(middleware.Recover())
 

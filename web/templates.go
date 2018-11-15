@@ -27,6 +27,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	if viewContext, isMap := data.(H); isMap {
 		viewContext["currentUser"] = c.Get("currentUser")
 		viewContext["path"] = c.Request().URL.Path
+		viewContext["csrf"] = c.Get("csrf")
 	}
 
 	return t.templates.ExecuteTemplate(w, name, data)

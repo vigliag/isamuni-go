@@ -17,6 +17,7 @@ type User struct {
 	EmailVerified  bool
 	FacebookID     *string `gorm:"unique"`
 	Role           string
+	//TODO ExpiredPassword bool
 }
 
 func (m *Model) RetrieveUserFB(facebookid string) *User {
@@ -164,3 +165,9 @@ func HashPassword(password string, salt []byte) string {
 	}
 	return hex.EncodeToString(dk)
 }
+
+/* For future use
+func (m *Model) MakeAdminByMail(email string, role string) (int64, error) {
+	res := m.Db.Exec("UPDATE users SET role=? WHERE email=?", role, email)
+	return res.RowsAffected, res.Error
+} */
