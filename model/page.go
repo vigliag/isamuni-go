@@ -117,6 +117,8 @@ func (m *Model) CanEdit(p *Page, u *User) bool {
 }
 
 func (m *Model) SavePage(p *Page, u *User) error {
+	//TODO this could be in a transaction, although it doesn't really matter,
+	//we do not enforce consistency, as the ContentVersion could be deleted eventually
 	if p.Slug == "" {
 		p.Slug = slug.Make(p.Title)
 	}
