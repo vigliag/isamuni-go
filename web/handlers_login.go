@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/securecookie"
@@ -132,13 +131,13 @@ func (ctl *Controller) loginWithEmail(c echo.Context) error {
 	}
 
 	if email == "" || password == "" {
-		log.Println("Empty email or password")
+		c.Logger().Error("Empty email or password")
 		return c.Render(http.StatusBadRequest, tplName, H{"error": "Empty email or password"})
 	}
 
 	user := ctl.model.LoginEmail(email, password)
 	if user == nil {
-		log.Println("Invalid email or password")
+		c.Logger().Error("Invalid email or password")
 		return c.Render(http.StatusNotFound, tplName, H{"error": "Invalid email or password"})
 	}
 

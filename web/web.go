@@ -61,6 +61,18 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 	}
 }
 
+func customHTTPErrorHandler(err error, c echo.Context) {
+	code := http.StatusInternalServerError
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+	}
+	if err := c.Render(code, "error.html", H{"code": code}); err != nil {
+		c.HTML(http.StatusInternalServerError, "<h3>Internal Server Error</h3>")
+		c.Logger().Error(err)
+	}
+	c.Logger().Error(err)
+}
+
 // CreateServer attaches the app's routes and middlewares to an Echo server
 func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	t := loadTemplates()
@@ -78,6 +90,8 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 		},
 	}
 	cs.MaxAge(cs.Options.MaxAge)
+
+	r.HTTPErrorHandler = customHTTPErrorHandler
 
 	r.Pre(middleware.RemoveTrailingSlash())
 

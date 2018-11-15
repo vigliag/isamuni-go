@@ -24,7 +24,7 @@
     <label for="content">Contenuto</label>
     <textarea name="content" id="content" placeholder="Content">{{ .shownContent }}</textarea>
     <input type="hidden" name="type" value="{{.page.Type.Int}}">
-    <input type="Submit" value="Save {{ if eq .currentUser.Role "admin" }} and approve{{ end }}">
+    <input type="Submit" value="Salva {{ if eq .currentUser.Role "admin" }} e approva{{ end }}">
     
     <p>Le tue modifiche verranno memorizzate nel database, e saranno visibili agli altri utenti dopo l'approvazione di un admin</p>
 </form>

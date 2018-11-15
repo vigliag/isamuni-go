@@ -68,6 +68,7 @@ func loadTemplates() *Template {
 	loadTemplateFromBox(templateBox, t, "pageShow.html")
 	loadTemplateFromBox(templateBox, t, "pageSearch.html")
 	loadTemplateFromBox(templateBox, t, "privacy.html")
+	loadTemplateFromBox(templateBox, t, "error.html")
 
 	return &Template{templates: t}
 }

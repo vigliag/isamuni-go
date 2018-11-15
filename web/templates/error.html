@@ -1,0 +1,16 @@
+{{ template "__header.html" }}
+<h3>Errore {{ .code }}</h3>
+<p>
+{{ if eq .code 404 }}
+    Pagina non trovata
+{{ else if eq .code 400}}
+    Richiesta errata
+{{ else if eq .code 500}}
+    Errore interno del server
+{{ else if eq .code 401}}
+    Non autorizzato
+{{ else }}
+    La richiesta ha causato un errore
+{{ end }}
+</p>
+{{ template "__footer.html" }}
