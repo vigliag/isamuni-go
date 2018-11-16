@@ -31,7 +31,7 @@ func facebookOauthConfig() *oauth2.Config {
 }
 
 func (ctl *Controller) redirectToFacebookLogin(c echo.Context) error {
-	state := model.GenRandomString()
+	state := model.GenRandomString(18)
 
 	sess, _ := session.Get("session", c)
 	sess.Values["oauth_state"] = state

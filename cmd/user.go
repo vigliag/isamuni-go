@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"path"
 	"strings"
 	"syscall"
@@ -21,6 +22,33 @@ func getModel() *model.Model {
 var userCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Manage users",
+}
+
+var userVerificationMail = &cobra.Command{
+	Use:   "sendverification [email]",
+	Short: "Register a users",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		m := getModel()
+		defer m.Close()
+
+		email := args[0]
+		ctl := GetController()
+
+		var u model.User
+		err := m.Db.First(&u, "email=?", email).Error
+		if err != nil {
+			fmt.Println("Can't find user with that mail")
+			return
+		}
+
+		err = ctl.SendEmailVerification(&u)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("done")
+	},
 }
 
 var userRegisterCmd = &cobra.Command{
@@ -58,6 +86,7 @@ var userRegisterCmd = &cobra.Command{
 }
 
 func init() {
+	userCmd.AddCommand(userVerificationMail)
 	userCmd.AddCommand(userRegisterCmd)
 	rootCmd.AddCommand(userCmd)
 }

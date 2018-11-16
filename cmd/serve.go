@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path"
-
-	"github.com/vigliag/isamuni-go/index"
 
 	"github.com/spf13/viper"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/spf13/cobra"
-	"github.com/vigliag/isamuni-go/model"
 	"github.com/vigliag/isamuni-go/web"
 )
 
@@ -26,18 +22,7 @@ var serveCmd = &cobra.Command{
 
 func serveRun(cmd *cobra.Command, args []string) {
 	listenURL := viper.GetString("LISTEN_URL")
-	dataPath := viper.GetString("data")
-	dbPath := path.Join(dataPath, "database.db")
-	indexPath := path.Join(dataPath, "index.bleve")
-	fmt.Println("Using data folder", dataPath)
-	fmt.Println("Using app url", viper.GetString("APP_URL"))
-
-	db := model.Connect(dbPath)
-	m := model.New(db)
-	bleveidx := index.OpenOrNewBleve(indexPath)
-	idx := index.New(bleveidx, m)
-	ctl := web.NewController(m, idx)
-
+	ctl := GetController()
 	r := web.CreateServer(echo.New(), ctl)
 
 	// attach CSRF middleware here, so that we don't have it during testing

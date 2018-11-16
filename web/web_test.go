@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/vigliag/isamuni-go/mail"
 
 	"github.com/vigliag/isamuni-go/index"
 
@@ -22,6 +25,7 @@ type TestEnvironment struct {
 	index   *index.Index
 	ctl     *Controller
 	app     *echo.Echo
+	mailer  *mail.TestMailer
 	tempdir string
 }
 
@@ -31,17 +35,19 @@ func (t *TestEnvironment) Close() {
 }
 
 func GetTestEnv() *TestEnvironment {
+	appURL := "http://localhost:8080"
 	dir, err := ioutil.TempDir("", "example")
 	if err != nil {
 		log.Fatal(err)
 	}
+	mailer := mail.TestMailer{}
 	m := model.New(model.ConnectTestDB())
 	bleveidx, err := index.NewBleve(dir)
 	panicIfNotNull(err)
 	idx := index.New(bleveidx, m)
-	ctl := NewController(m, idx)
+	ctl := NewController(appURL, m, idx, &mailer)
 	return &TestEnvironment{
-		m, idx, ctl, CreateServer(echo.New(), ctl), dir,
+		m, idx, ctl, CreateServer(echo.New(), ctl), &mailer, dir,
 	}
 }
 
@@ -207,4 +213,27 @@ func TestSearch(t *testing.T) {
 	client := env.TestClient()
 	assertHTMLReturned(t, client.Get("/search"))
 	assertHTMLReturned(t, client.Get("/search?query=promuove"))
+}
+
+func TestSendMailVerification(t *testing.T) {
+	env := GetTestEnv()
+	defer env.Close()
+
+	// Send the verification mail
+	u := env.registerTestUser()
+	err := env.ctl.SendEmailVerification(u)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, env.mailer.Mails)
+
+	// Get the verification url from the mail
+	mail := env.mailer.Mails[len(env.mailer.Mails)-1]
+	urlRegex := regexp.MustCompile(`http[s]?:\/\/\S+`)
+	fmt.Println(mail.Body)
+	confirmationAddr := urlRegex.FindString(mail.Body)
+	assert.NotEmpty(t, confirmationAddr)
+
+	// Visit the verification url
+	client := env.TestClient()
+	res := client.Get(confirmationAddr)
+	assert.Equal(t, http.StatusFound, res.StatusCode)
 }

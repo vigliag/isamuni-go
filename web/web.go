@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/vigliag/isamuni-go/index"
+	"github.com/vigliag/isamuni-go/mail"
 
 	"github.com/spf13/viper"
 
@@ -19,12 +20,14 @@ import (
 )
 
 type Controller struct {
-	model *model.Model
-	index *index.Index
+	model  *model.Model
+	index  *index.Index
+	mailer mail.Mailer
+	appURL string
 }
 
-func NewController(model *model.Model, index *index.Index) *Controller {
-	return &Controller{model, index}
+func NewController(appURL string, model *model.Model, index *index.Index, mailer mail.Mailer) *Controller {
+	return &Controller{model, index, mailer, appURL}
 }
 
 // Helpers
@@ -137,5 +140,7 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 
 	r.POST("/pages", ctl.updatePageH)
 	r.POST("/pages/:id", ctl.updatePageH)
+
+	r.GET("/confirmMail", ctl.mailVerificationH)
 	return r
 }

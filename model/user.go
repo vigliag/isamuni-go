@@ -80,7 +80,7 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 		Username:     name,
 		FacebookID:   &facebookID,
 		Role:         "user",
-		SessionToken: GenRandomString(),
+		SessionToken: GenRandomString(18),
 	}
 
 	if maybeEmail != nil {
@@ -150,7 +150,7 @@ func (u *User) SetPassword(password string) {
 	}
 	u.Salt = string(salt)
 	u.HashedPassword = HashPassword(password, salt)
-	u.SessionToken = GenRandomString()
+	u.SessionToken = GenRandomString(18)
 }
 
 func (u *User) CheckPassword(password string) bool {

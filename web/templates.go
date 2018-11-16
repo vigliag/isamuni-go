@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/labstack/echo-contrib/session"
+
 	"github.com/GeertJohan/go.rice"
 	"github.com/microcosm-cc/bluemonday"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
@@ -23,11 +25,16 @@ type Template struct {
 
 //Render renders a template given its name, and the data to pass to the template engine
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	s, err := session.Get("session", c)
+
 	// add common variables from context
 	if viewContext, isMap := data.(H); isMap {
 		viewContext["currentUser"] = c.Get("currentUser")
 		viewContext["path"] = c.Request().URL.Path
 		viewContext["csrf"] = c.Get("csrf")
+		if err == nil {
+			viewContext["flashes"] = s.Flashes()
+		}
 	}
 
 	return t.templates.ExecuteTemplate(w, name, data)

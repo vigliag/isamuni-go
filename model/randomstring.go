@@ -1,11 +1,11 @@
 package model
 
 import (
-	"encoding/base64"
+	"encoding/base32"
 
 	"github.com/gorilla/securecookie"
 )
 
-func GenRandomString() string {
-	return base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(16))
+func GenRandomString(length int) string {
+	return base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(length))
 }

@@ -24,10 +24,10 @@ func (m *Model) DeleteExpiredTokens() error {
 	return m.Db.Where("expiration < ?", time.Now()).Delete(Token{}).Error
 }
 
-func (m *Model) CreateToken(identifier uint) (string, error) {
-	state := GenRandomString()
+func (m *Model) CreateToken(identifier uint, length int) (string, error) {
+	state := GenRandomString(length)
 	t := Token{
-		Expiration: time.Now().Add(time.Minute * 10),
+		Expiration: time.Now().Add(time.Minute * 30),
 		Value:      state,
 		Identifier: identifier,
 	}
@@ -42,7 +42,7 @@ func (m *Model) GetToken(value string) (*Token, error) {
 
 	t := new(Token)
 
-	res := m.Db.First(&t, "state = ?", value)
+	res := m.Db.First(&t, "value=?", value)
 	if res.Error != nil {
 		return nil, res.Error
 	}
@@ -51,5 +51,5 @@ func (m *Model) GetToken(value string) (*Token, error) {
 }
 
 func (m *Model) DeleteToken(value string) error {
-	return m.Db.Where("value =  ?", value).Delete(Token{}).Error
+	return m.Db.Where("value=?", value).Delete(Token{}).Error
 }

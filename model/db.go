@@ -25,6 +25,6 @@ func ConnectTestDB() *gorm.DB {
 		panic(err)
 	}
 
-	Db.AutoMigrate(&User{}, &Page{}, &ContentVersion{})
+	Db.AutoMigrate(&User{}, &Page{}, &ContentVersion{}, &Token{})
 	return Db
 }

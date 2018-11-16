@@ -36,4 +36,13 @@
                 {{ end }}
             </span>
         </section>
+
+        {{ if .flashes }}
+        <section class="flashes">
+            {{ range .flashes }}
+                <p class="flash">{{.}}</p>
+            {{ end }}
+        </section>
+        {{ end }}
+
         <div class="container">

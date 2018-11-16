@@ -11,40 +11,69 @@ import (
 	"strings"
 )
 
+type Mailer interface {
+	SendMail(*Mail) error
+}
+
+type Recipient struct {
+	Name string
+	Mail string
+}
+
+func (r Recipient) String() string {
+	return fmt.Sprintf("%s <%s>", r.Name, r.Mail)
+}
+
 type Mail struct {
 	Sender  string
-	To      []string
-	Cc      []string
-	Bcc     []string
+	To      []Recipient
+	Cc      []Recipient
+	Bcc     []Recipient
 	Subject string
 	Body    string
 }
 
 type SmtpServer struct {
 	Host      string
-	Port      string
+	Port      int
 	Password  string
+	User      string
 	TlsConfig *tls.Config
 }
 
-func (s *SmtpServer) ServerName() string {
-	return s.Host + ":" + s.Port
+type TestMailer struct {
+	Mails []*Mail
+}
+
+func (m *TestMailer) SendMail(mail *Mail) error {
+	m.Mails = append(m.Mails, mail)
+	return nil
 }
 
 func (mail *Mail) BuildMessage() string {
 	sb := &strings.Builder{}
 
 	fmt.Fprintf(sb, "From: %s\r\n", mail.Sender)
+
+	to_strings := make([]string, len(mail.To))
+	for i, recipient := range mail.To {
+		to_strings[i] = recipient.String()
+	}
+	cc_strings := make([]string, len(mail.To))
+	for i, recipient := range mail.To {
+		cc_strings[i] = recipient.String()
+	}
 	if len(mail.To) > 0 {
-		fmt.Fprintf(sb, "To: %s\r\n", strings.Join(mail.To, ";"))
+		fmt.Fprintf(sb, "To: %s\r\n", strings.Join(to_strings, ";"))
 	}
 	if len(mail.Cc) > 0 {
-		fmt.Fprintf(sb, "Cc: %s\r\n", strings.Join(mail.Cc, ";"))
+		fmt.Fprintf(sb, "Cc: %s\r\n", strings.Join(cc_strings, ";"))
 	}
 
 	fmt.Fprintf(sb, "Subject: %s\r\n", mail.Subject)
 	fmt.Fprint(sb, "\r\n")
 	fmt.Fprint(sb, mail.Body)
+	fmt.Fprint(sb, "\r\n.\r\n")
 
 	return sb.String()
 }
@@ -52,17 +81,17 @@ func (mail *Mail) BuildMessage() string {
 func ConfirmationEmail(name, email, confirmationURL string) *Mail {
 	return &Mail{
 		Sender:  "noreply@isamuni.it",
-		To:      []string{fmt.Sprintf("%s<%s>", name, email)},
+		To:      []Recipient{Recipient{name, email}},
 		Subject: "Confirm email",
-		Body:    fmt.Sprintf(`Hello %s, you're receiving this email because someone (hopefully you) registered it on isamuni.it\nIf it was you, please click on %s to confirm your mail.\nOtherwise simply ignore this mail.`, name, confirmationURL),
+		Body:    fmt.Sprintf("Hello %s, you're receiving this email because someone (hopefully you) registered it on isamuni.it\r\nIf it was you, please use on %s to confirm your mail.\r\nOtherwise simply ignore this mail.", name, confirmationURL),
 	}
 }
 
 func (s *SmtpServer) SendMail(mail *Mail) error {
 
-	auth := smtp.PlainAuth("", mail.Sender, s.Password, s.Host)
+	auth := smtp.PlainAuth("", s.User, s.Password, s.Host)
 
-	conn, err := tls.Dial("tcp", s.ServerName(), s.TlsConfig)
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port), s.TlsConfig)
 	if err != nil {
 		return err
 	}
@@ -86,7 +115,7 @@ func (s *SmtpServer) SendMail(mail *Mail) error {
 	receivers = append(receivers, mail.Bcc...)
 	for _, k := range receivers {
 		log.Println("sending to: ", k)
-		if err = client.Rcpt(k); err != nil {
+		if err = client.Rcpt(k.Mail); err != nil {
 			return err
 		}
 	}
