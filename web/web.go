@@ -134,8 +134,9 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	r.GET("/communities", ctl.indexPageH(model.PageCommunity))
 
 	r.GET("/me", ctl.mePageH)
-
+	r.POST("/setMail", ctl.setMailH)
 	r.GET("/search", ctl.searchH)
+
 	r.GET("/privacy", serveTemplate("privacy"))
 
 	r.POST("/pages", ctl.updatePageH)

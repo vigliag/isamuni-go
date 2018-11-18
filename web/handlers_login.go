@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/vigliag/isamuni-go/model"
 
@@ -171,4 +172,30 @@ func (ctl *Controller) setCurrentUserMiddleware(next echo.HandlerFunc) echo.Hand
 		c.Set("currentUser", user)
 		return next(c)
 	}
+}
+
+func (ctl *Controller) setMailH(c echo.Context) error {
+	// TODO no tests yet
+	u := currentUser(c)
+	if u == nil {
+		return c.Redirect(http.StatusFound, "/login")
+	}
+
+	email := strings.TrimSpace(c.FormValue("email"))
+
+	// do nothing if the mail has not been updated
+	if email == "" || (u.Email != nil && *u.Email == email) {
+		return c.Redirect(http.StatusSeeOther, "/me")
+	}
+
+	// update the email
+	u.Email = &email
+	u.EmailVerified = false
+	err := ctl.model.Db.Save(u).Error
+	if err != nil {
+		//TODO better error handling
+		return err
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/me")
 }

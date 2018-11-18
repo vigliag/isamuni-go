@@ -99,6 +99,7 @@ func (i Index) searchPageByQueryString(querystring string) (*bleve.SearchResult,
 	search.AddFacet("type", bleve.NewFacetRequest("type", 10))
 
 	search.Highlight = bleve.NewHighlight()
+	search.Highlight.AddField("sector")
 	search.Highlight.AddField("short")
 	search.Highlight.AddField("skills")
 	search.Highlight.AddField("tags")

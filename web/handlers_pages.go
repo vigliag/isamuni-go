@@ -115,7 +115,7 @@ func (ctl *Controller) mePageH(c echo.Context) error {
 	}
 	shownContent := page.Content
 	shownVersion := "Current"
-	return c.Render(200, "pageEdit.html", H{"page": page, "action": action, "shownContent": shownContent, "shownVersion": shownVersion})
+	return c.Render(200, "profileEdit.html", H{"page": page, "action": action, "shownContent": shownContent, "shownVersion": shownVersion, "user": u})
 }
 
 // shows edit form for a page

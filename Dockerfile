@@ -1,5 +1,5 @@
 FROM golang:alpine
-RUN apk add git gcc musl-dev
+RUN apk add git gcc musl-dev sqlite bash
 
 WORKDIR /go/src/github.com/vigliag/isamuni-go
 COPY . .

@@ -1,0 +1,33 @@
+{{ template "__header.html" . }}
+<div class="container">
+
+<h3>Modifica pagina utente</h3>
+<form action="{{ or .action "/pages" }}" method="post">
+    <input type="hidden" name="csrf" value="{{.csrf}}"></input>
+    <label for="title">Nome</label>
+    <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
+    {{ if eq .currentUser.Role "admin" }}
+    <label for="slug">Slug (vuoto per autogenerare)</label>
+        <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">
+    {{ end }}
+    <label for="content">Contenuto</label>
+    <textarea name="content" id="content" placeholder="Content">{{ .shownContent }}</textarea>
+    <input type="hidden" name="type" value="{{.page.Type.Int}}">
+    <input type="submit" value="Salva">
+</form>
+
+<h3>Modifica dati profilo</h3>
+<form action="/setMail" method="post">
+    <input type="hidden" name="csrf" value="{{.csrf}}"></input>
+    <label for="email">Email</label>
+    <input type="text" name="email" id="email" value="{{.user.Email}}">
+    <input type="submit" value="Aggiorna email">
+</form>
+
+</div>
+<link rel="stylesheet" href="/static/simplemde.min.css">
+<script src="/static/simplemde.min.js"></script>
+<script>
+    var simplemde = new SimpleMDE();
+</script>
+{{ template "__footer.html"}}

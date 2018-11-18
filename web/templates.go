@@ -75,6 +75,7 @@ func loadTemplates() *Template {
 	loadTemplateFromBox(templateBox, t, "pageIndex.html")
 	loadTemplateFromBox(templateBox, t, "pageShow.html")
 	loadTemplateFromBox(templateBox, t, "pageSearch.html")
+	loadTemplateFromBox(templateBox, t, "profileEdit.html")
 	loadTemplateFromBox(templateBox, t, "privacy.html")
 	loadTemplateFromBox(templateBox, t, "error.html")
 
