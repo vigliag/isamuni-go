@@ -221,7 +221,11 @@ func TestSendMailVerification(t *testing.T) {
 
 	// Send the verification mail
 	u := env.registerTestUser()
-	err := env.ctl.SendEmailVerification(u)
+	u.EmailVerified = false
+	err := env.model.Db.Save(&u).Error
+	panicIfNotNull(err)
+
+	err = env.ctl.SendEmailVerification(u)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, env.mailer.Mails)
 
@@ -236,4 +240,8 @@ func TestSendMailVerification(t *testing.T) {
 	client := env.TestClient()
 	res := client.Get(confirmationAddr)
 	assert.Equal(t, http.StatusFound, res.StatusCode)
+
+	// Check the user email was verified
+	u = env.model.RetrieveUser(u.ID)
+	assert.Equal(t, true, u.EmailVerified)
 }

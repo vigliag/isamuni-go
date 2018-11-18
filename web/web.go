@@ -142,5 +142,10 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	r.POST("/pages/:id", ctl.updatePageH)
 
 	r.GET("/confirmMail", ctl.mailVerificationH)
+
+	r.GET("/robots.txt", func(c echo.Context) error {
+		return c.String(http.StatusOK, "User-agent: *\nDisallow: /")
+	})
+
 	return r
 }
