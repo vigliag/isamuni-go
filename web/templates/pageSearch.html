@@ -3,9 +3,11 @@
 <h2>Ricerca</h2>
 
 <form action="/search">
-    <input type="search" name="query" value="{{.query}}"></input>
+    <input type="search" name="query" value="{{.query}}">
     <input type="submit">
 </form>
+
+<p>Puoi applicare filtri alla ricerca con la sintassi "campo:valore", ad esempio "area:Catania javascript". Puoi filtrare per area, tags, sector, short, description.</p>
 
 {{ if .query }}
     {{ if or .professionals .companies .communities false }}
