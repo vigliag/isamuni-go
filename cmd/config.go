@@ -38,6 +38,7 @@ func GetController() *web.Controller {
 	bleveidx := index.OpenOrNewBleve(indexPath)
 	idx := index.New(bleveidx, m)
 	mailer := GetMailer()
-	ctl := web.NewController(appURL, m, idx, mailer)
+	t := web.LoadTemplates()
+	ctl := web.NewController(appURL, m, idx, mailer, t)
 	return ctl
 }

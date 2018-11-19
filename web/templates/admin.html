@@ -1,0 +1,23 @@
+{{ template "__header.html" . }}
+<h3>Modifiche non approvate</h3>
+<table>
+   <thead>
+        <tr>
+        <th>Pagina</th>
+        <th>Versione</th>
+        <th>Utente</th>
+        <th>Data</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{ range .unapproved }}
+        <tr>
+            <td>{{.Page.Title}}</td>
+            <td><a href="{{ pageurl .Page }}/edit?version={{.ID}}">{{.ID}}</a></td>
+            <td>{{ .User.Username }}</td>
+            <td>{{datetime .UpdatedAt}}</td>
+        </tr>
+    {{ end }}
+    </tbody>
+</table>
+{{ template "__footer.html" . }}

@@ -2,22 +2,22 @@
 <div class="container">
 
 {{ if and (eq .currentUser.Role "admin") (.versions) }}
-    <h3>Versions</h3>
+    <h3>Versioni della pagina</h3>
     <ul>
         {{ range .versions }}
-            <li>{{.User.Username }} - {{.ID}}</li>
+            <li><a href="{{ pageurl $.page }}/edit?version={{.ID}}">{{.ID}}</a> di {{.User.Username }} aggiornata il {{datetime .UpdatedAt}} </li>
         {{ end }}
     </ul>
 {{ end }}
 
-{{ if .versions }}
-    <p>Mostrando la versione: {{ .shownVersion }}</p>
+{{ with .shownVersion }}
+    <p>Mostrando la versione: {{.ID}} di {{.User.Username }} aggiornata il {{datetime .UpdatedAt}}</p>
 {{ end }}
 
 <form action="{{ or .action "/pages" }}" method="post">
     <input type="hidden" name="csrf" value="{{.csrf}}"></input>
     <label for="title">Nome</label>
-    <input type="text" name="title" id="title" placeholder="Title" value="{{.page.Title}}">
+    <input type="text" name="title" id="title" placeholder="Nome" value="{{.page.Title}}">
     {{ if eq .currentUser.Role "admin" }}
     <label for="slug">Slug (vuoto per autogenerare)</label>
         <input type="text" name="slug" id="slug" placeholder="Slug" value="{{.page.Slug}}">

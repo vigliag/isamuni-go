@@ -45,7 +45,8 @@ func GetTestEnv() *TestEnvironment {
 	bleveidx, err := index.NewBleve(dir)
 	panicIfNotNull(err)
 	idx := index.New(bleveidx, m)
-	ctl := NewController(appURL, m, idx, &mailer)
+	t := LoadTemplates()
+	ctl := NewController(appURL, m, idx, &mailer, t)
 	return &TestEnvironment{
 		m, idx, ctl, CreateServer(echo.New(), ctl), &mailer, dir,
 	}

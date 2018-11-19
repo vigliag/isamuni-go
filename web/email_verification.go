@@ -72,6 +72,4 @@ func (ctl *Controller) mailVerificationH(c echo.Context) error {
 	s.Save(c.Request(), c.Response())
 
 	return c.Redirect(http.StatusFound, "/")
-
-	return nil
 }

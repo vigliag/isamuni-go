@@ -1,4 +1,4 @@
-{{ template "__header.html" }}
+{{ template "__header.html" . }}
 <h3>Errore {{ .code }}</h3>
 <p>
 {{ if eq .code 404 }}
@@ -13,4 +13,4 @@
     La richiesta ha causato un errore
 {{ end }}
 </p>
-{{ template "__footer.html" }}
+{{ template "__footer.html" . }}

@@ -23,6 +23,7 @@
     <input type="text" name="email" id="email" value="{{.user.Email}}">
     <input type="submit" value="Aggiorna email">
 </form>
+{{ if .user.Email }}
 <form action="/setPassword" method="post">
     <input type="hidden" name="csrf" value="{{.csrf}}"></input>
     {{ if .user.HashedPassword }}
@@ -35,7 +36,7 @@
     <input type="password" name="newpwd" id="newpwd">
     <input type="submit" value="Imposta password">
 </form>
-
+{{ end }}
 </div>
 <link rel="stylesheet" href="/static/simplemde.min.css">
 <script src="/static/simplemde.min.js"></script>

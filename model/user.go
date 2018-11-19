@@ -29,6 +29,13 @@ func (m *Model) RetrieveUserFB(facebookid string) *User {
 	return &u
 }
 
+func (m *Model) SaveUser(user *User) error {
+	if user.SessionToken == "" {
+		user.SessionToken = GenRandomString(18)
+	}
+	return m.Db.Save(user).Error
+}
+
 func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name string, maybeEmail *string) (*User, error) {
 	// if that facebookID is already in the system, we want to log the user in with that
 	existingFacebookUser := m.RetrieveUserFB(facebookID)
@@ -39,7 +46,7 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 				existingFacebookUser.Email = maybeEmail
 			}
 			existingFacebookUser.EmailVerified = true
-			err := m.Db.Save(&existingFacebookUser).Error
+			err := m.SaveUser(existingFacebookUser)
 			if err != nil {
 				return nil, err
 			}
@@ -51,7 +58,7 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 	// then we want to add the facebook data to the existing profile
 	if currentUser != nil {
 		currentUser.FacebookID = &facebookID
-		err := m.Db.Save(&currentUser).Error
+		err := m.SaveUser(currentUser)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +74,7 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 			existingEmailUser.FacebookID = &facebookID
 			existingEmailUser.EmailVerified = true
 
-			err = m.Db.Save(&existingEmailUser).Error
+			err = m.SaveUser(&existingEmailUser)
 			if err != nil {
 				return nil, err
 			}
@@ -77,10 +84,9 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 	// We are not logged in, and both the facebookID and the mail are not
 	// in our system, we create a new User
 	newUser := &User{
-		Username:     name,
-		FacebookID:   &facebookID,
-		Role:         "user",
-		SessionToken: GenRandomString(18),
+		Username:   name,
+		FacebookID: &facebookID,
+		Role:       "user",
 	}
 
 	if maybeEmail != nil {
@@ -88,7 +94,7 @@ func (m *Model) LoginOrCreateFB(currentUser *User, facebookID string, name strin
 		newUser.EmailVerified = true
 	}
 
-	err := m.Db.Save(newUser).Error
+	err := m.SaveUser(newUser)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +141,9 @@ func (m *Model) RegisterEmail(username string, email string, password string, ro
 		EmailVerified: true,
 	}
 	u.SetPassword(password)
-	res := m.Db.Save(&u)
-	if res.Error != nil {
-		return nil, res.Error
+	err := m.SaveUser(&u)
+	if err != nil {
+		return nil, err
 	}
 	return &u, nil
 }

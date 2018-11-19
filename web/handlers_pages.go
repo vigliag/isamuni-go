@@ -68,7 +68,15 @@ func (ctl *Controller) newPageH(ptype model.PageType) echo.HandlerFunc {
 
 		p := model.Page{}
 		p.Type = ptype
-		return c.Render(200, "pageEdit.html", H{"page": p})
+
+		var shownContent string
+		if p.Type == model.PageCommunity {
+			shownContent, _ = ctl.renderer.RenderString("exampleCommunity.html", H{})
+		} else if p.Type == model.PageCompany {
+			shownContent, _ = ctl.renderer.RenderString("exampleCompany.html", H{})
+		}
+
+		return c.Render(200, "pageEdit.html", H{"page": p, "shownContent": shownContent})
 	}
 }
 
@@ -94,30 +102,6 @@ func (ctl *Controller) showPageH(ptype model.PageType) echo.HandlerFunc {
 	}
 }
 
-func (ctl *Controller) mePageH(c echo.Context) error {
-	u := currentUser(c)
-	if u == nil {
-		return c.Redirect(http.StatusFound, "/login")
-	}
-
-	page := ctl.model.UserPage(u)
-	if page == nil {
-		fmt.Printf("User page not found")
-		page = &model.Page{
-			Title: u.Username,
-		}
-	}
-
-	// generate an url to edit the page, if the page does not exists
-	action := "/pages"
-	if page.ID != 0 {
-		action = fmt.Sprintf("/pages/%d", page.ID)
-	}
-	shownContent := page.Content
-	shownVersion := "Current"
-	return c.Render(200, "profileEdit.html", H{"page": page, "action": action, "shownContent": shownContent, "shownVersion": shownVersion, "user": u})
-}
-
 // shows edit form for a page
 // if user is admin, it should also show a list of versions, containing:
 // - the current version
@@ -136,6 +120,8 @@ func (ctl *Controller) editPageH(ptype model.PageType) echo.HandlerFunc {
 			return echo.NewHTTPError(404, "Invalid ID")
 		}
 
+		versionID, _ := strconv.Atoi(c.QueryParam("version"))
+
 		page := ctl.model.FindPage(uint(id), ptype)
 		if page == nil {
 			log.Printf("Page not found for %v\n", id)
@@ -151,10 +137,19 @@ func (ctl *Controller) editPageH(ptype model.PageType) echo.HandlerFunc {
 		}
 
 		shownContent := page.Content
-		shownVersion := "Current"
-		if len(versions) > 0 {
+		var shownVersion *model.ContentVersion
+
+		// if a version id was specified, show that instead
+		if versionID != 0 {
+			for _, v := range versions {
+				if v.ID == uint(versionID) {
+					shownContent = v.Content
+					shownVersion = &v
+				}
+			}
+		} else if len(versions) > 0 {
 			shownContent = versions[0].Content
-			shownVersion = fmt.Sprintf("revision %v by %v at %v", versions[0].ID, versions[0].User.Username, versions[0].UpdatedAt)
+			shownVersion = &versions[0]
 		}
 
 		action := "/pages"

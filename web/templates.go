@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo-contrib/session"
 
@@ -41,6 +42,15 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+func (t *Template) RenderString(name string, data interface{}) (string, error) {
+	w := strings.Builder{}
+	err := t.templates.ExecuteTemplate(&w, name, data)
+	if err != nil {
+		return "", err
+	}
+	return w.String(), nil
+}
+
 func loadTemplateFromBox(box *rice.Box, parent *template.Template, name string) {
 	templateString, err := box.String(name)
 	if err != nil {
@@ -53,7 +63,7 @@ func loadTemplateFromBox(box *rice.Box, parent *template.Template, name string) 
 	}
 }
 
-func loadTemplates() *Template {
+func LoadTemplates() *Template {
 	templateBox, err := rice.FindBox("templates")
 	if err != nil {
 		log.Fatal(err)
@@ -67,7 +77,11 @@ func loadTemplates() *Template {
 		"pageurl": PageURL,
 		"caturl":  CatUrl,
 		"catname": CatName,
+		"datetime": func(t time.Time) string {
+			return t.Format("2 Jan 2006 15:04")
+		},
 	})
+
 	loadTemplateFromBox(templateBox, t, "__footer.html")
 	loadTemplateFromBox(templateBox, t, "__header.html")
 	loadTemplateFromBox(templateBox, t, "home.html")
@@ -79,6 +93,10 @@ func loadTemplates() *Template {
 	loadTemplateFromBox(templateBox, t, "profileEdit.html")
 	loadTemplateFromBox(templateBox, t, "privacy.html")
 	loadTemplateFromBox(templateBox, t, "error.html")
+	loadTemplateFromBox(templateBox, t, "exampleProfessional.html")
+	loadTemplateFromBox(templateBox, t, "exampleCommunity.html")
+	loadTemplateFromBox(templateBox, t, "exampleCompany.html")
+	loadTemplateFromBox(templateBox, t, "admin.html")
 
 	return &Template{templates: t}
 }

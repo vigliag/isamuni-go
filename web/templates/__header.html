@@ -30,7 +30,7 @@
         <section class="login container clearfix">
             <span class="float-right">
                 {{ if .currentUser }}
-                    Hai acceduto come {{ .currentUser.Username }} <a href="/logout">Logout</a>, <a href="/me">Profilo</a>
+                    Hai acceduto come {{ .currentUser.Username }} <a href="/logout">Logout</a>, <a href="/me">Profilo</a>{{ if eq .currentUser.Role "admin" }}, <a href="/admin">Admin</a>{{ end }}
                 {{ else }}
                     Non loggato <a href="/login?redir={{ .path }}">Effettua il login</a> per modificare i contenuti
                 {{ end }}

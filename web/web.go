@@ -20,14 +20,15 @@ import (
 )
 
 type Controller struct {
-	model  *model.Model
-	index  *index.Index
-	mailer mail.Mailer
-	appURL string
+	model    *model.Model
+	index    *index.Index
+	mailer   mail.Mailer
+	renderer *Template
+	appURL   string
 }
 
-func NewController(appURL string, model *model.Model, index *index.Index, mailer mail.Mailer) *Controller {
-	return &Controller{model, index, mailer, appURL}
+func NewController(appURL string, model *model.Model, index *index.Index, mailer mail.Mailer, renderer *Template) *Controller {
+	return &Controller{model, index, mailer, renderer, appURL}
 }
 
 // Helpers
@@ -79,7 +80,7 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 
 // CreateServer attaches the app's routes and middlewares to an Echo server
 func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
-	t := loadTemplates()
+	t := LoadTemplates()
 	r.Renderer = t
 	r.HTTPErrorHandler = customHTTPErrorHandler
 
@@ -143,6 +144,7 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 	r.GET("/companies", ctl.indexPageH(model.PageCompany))
 	r.GET("/communities", ctl.indexPageH(model.PageCommunity))
 
+	r.GET("/admin", ctl.adminH)
 	r.GET("/me", ctl.mePageH)
 	r.POST("/setMail", ctl.setMailH)
 	r.POST("/setPassword", ctl.setPasswordH)

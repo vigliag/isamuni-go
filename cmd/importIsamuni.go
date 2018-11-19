@@ -84,7 +84,7 @@ func copyUsers(isamunidb *sql.DB, m *model.Model) {
 			FacebookID: &fbid.String,
 			Username:   name.String,
 		}
-		err := m.Db.Save(&u).Error
+		err := m.SaveUser(&u)
 
 		p := model.Page{
 			Title:   name.String,
