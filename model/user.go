@@ -154,7 +154,7 @@ func (u *User) SetPassword(password string) {
 }
 
 func (u *User) CheckPassword(password string) bool {
-	if password == "" {
+	if password == "" || u.HashedPassword == "" || u.Salt == "" {
 		return false
 	}
 	return HashPassword(password, []byte(u.Salt)) == u.HashedPassword

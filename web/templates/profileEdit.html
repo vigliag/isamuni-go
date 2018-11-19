@@ -23,6 +23,18 @@
     <input type="text" name="email" id="email" value="{{.user.Email}}">
     <input type="submit" value="Aggiorna email">
 </form>
+<form action="/setPassword" method="post">
+    <input type="hidden" name="csrf" value="{{.csrf}}"></input>
+    {{ if .user.HashedPassword }}
+        <label for="currpwd">Password Corrente</label>
+        <input type="password" name="currpwd" id="currpwd">
+    {{ else }}
+        <p>Impostare una password abiliterà il login con email e password</p>
+    {{ end }}
+    <label for="newpwd">Nuova password</label>
+    <input type="password" name="newpwd" id="newpwd">
+    <input type="submit" value="Imposta password">
+</form>
 
 </div>
 <link rel="stylesheet" href="/static/simplemde.min.css">

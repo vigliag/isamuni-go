@@ -55,6 +55,16 @@ func serveTemplate(templateName string) echo.HandlerFunc {
 	}
 }
 
+func setFlash(c echo.Context, message string) {
+	s, err := session.Get("session", c)
+	if err != nil || s == nil {
+		return
+	}
+
+	s.AddFlash(message)
+	s.Save(c.Request(), c.Response())
+}
+
 func customHTTPErrorHandler(err error, c echo.Context) {
 	code := http.StatusInternalServerError
 	if he, ok := err.(*echo.HTTPError); ok {
@@ -135,6 +145,8 @@ func CreateServer(r *echo.Echo, ctl *Controller) *echo.Echo {
 
 	r.GET("/me", ctl.mePageH)
 	r.POST("/setMail", ctl.setMailH)
+	r.POST("/setPassword", ctl.setPasswordH)
+
 	r.GET("/search", ctl.searchH)
 
 	r.GET("/privacy", serveTemplate("privacy"))

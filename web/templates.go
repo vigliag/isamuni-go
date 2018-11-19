@@ -34,6 +34,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 		viewContext["csrf"] = c.Get("csrf")
 		if err == nil {
 			viewContext["flashes"] = s.Flashes()
+			s.Save(c.Request(), c.Response())
 		}
 	}
 

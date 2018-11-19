@@ -7,12 +7,13 @@
     <input type="submit">
 </form>
 
-{{ if or .professionals .companies .communities false }}
-    <h2>Risultati ricerca:</h2>
-{{ else }}
-    <h2>Nessun risultato</h2>
+{{ if .query }}
+    {{ if or .professionals .companies .communities false }}
+        <h2>Risultati ricerca:</h2>
+    {{ else }}
+        <h2>Nessun risultato</h2>
+    {{ end }}
 {{ end }}
-
 
 {{ if .communities }}
     <h3>Community</h3>
@@ -23,11 +24,13 @@
         {{ if .Fragments }}
         <ul>
         {{ range $key, $fragments := .Fragments }}
+            {{ if $fragments }}
             <li><strong>{{ $key }}</strong>:
                 {{ range $fragments }}
                     <span>{{ (sanitize .) }}</span>
                 {{ end }}
             </li>
+            {{ end }}
         {{ end }}
         </ul>
         {{ end }}
@@ -46,11 +49,13 @@
         {{ if .Fragments }}
         <ul>
         {{ range $key, $fragments := .Fragments }}
+            {{ if $fragments }}
             <li><strong>{{ $key }}</strong>:
                 {{ range $fragments }}
                     <span>{{ (sanitize .) }}</span>
                 {{ end }}
             </li>
+            {{ end }}
         {{ end }}
         </ul>
         {{ end }}
@@ -68,11 +73,13 @@
         {{ if .Fragments }}
         <ul>
         {{ range $key, $fragments := .Fragments }}
+            {{ if $fragments }}
             <li><strong>{{ $key }}</strong>:
                 {{ range $fragments }}
                     <span>{{ (sanitize .) }}</span>
                 {{ end }}
             </li>
+            {{ end }}
         {{ end }}
         </ul>
         {{ end }}
