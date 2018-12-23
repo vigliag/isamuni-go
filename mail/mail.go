@@ -80,10 +80,10 @@ func (mail *Mail) BuildMessage() string {
 
 func ConfirmationEmail(name, email, confirmationURL string) *Mail {
 	return &Mail{
-		Sender:  "noreply@isamuni.it",
+		Sender:  "noreply@isamuni.org",
 		To:      []Recipient{Recipient{name, email}},
 		Subject: "Confirm email",
-		Body:    fmt.Sprintf("Hello %s, you're receiving this email because someone (hopefully you) registered it on isamuni.it\r\nIf it was you, please use on %s to confirm your mail.\r\nOtherwise simply ignore this mail.", name, confirmationURL),
+		Body:    fmt.Sprintf("Hello %s, you're receiving this email because someone (hopefully you) registered it on isamuni.org\r\nIf it was you, please use on %s to confirm your mail.\r\nOtherwise simply ignore this mail.", name, confirmationURL),
 	}
 }
 
