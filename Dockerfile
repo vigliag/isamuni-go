@@ -3,9 +3,6 @@ RUN apk add git gcc musl-dev sqlite bash
 
 WORKDIR /go/src/github.com/vigliag/isamuni-go
 
-# download and cache big dependencies
-RUN go get -v github.com/blevesearch/bleve
-
 COPY . .
 RUN go get -d -v ./...
 RUN go install -v ./...

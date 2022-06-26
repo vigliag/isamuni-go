@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gosimple/slug"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/vigliag/isamuni-go/model"
 )
 

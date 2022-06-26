@@ -9,11 +9,11 @@ import (
 
 	"github.com/labstack/echo-contrib/session"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/microcosm-cc/bluemonday"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
+	blackfriday "github.com/russross/blackfriday/v2"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 //H is the context for a template

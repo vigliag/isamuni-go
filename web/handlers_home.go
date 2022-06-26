@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func (ctl *Controller) homeH(c echo.Context) error {

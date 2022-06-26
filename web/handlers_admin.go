@@ -5,7 +5,7 @@ import (
 
 	"github.com/vigliag/isamuni-go/model"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func (ctl *Controller) adminH(c echo.Context) error {
